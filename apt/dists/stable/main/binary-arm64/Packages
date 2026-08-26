@@ -1,0 +1,17 @@
+Package: gitpad
+Architecture: arm64
+Version: 0.1.0
+Priority: optional
+Section: vcs
+Maintainer: jinhyo-dev <jinhyo-dev@users.noreply.github.com>
+Installed-Size: 4161
+Depends: git
+Filename: pool/main/arm64/gitpad_0.1.0_linux_arm64.deb
+Size: 1539618
+MD5sum: e71bcc50255fa536a5ac80ae8557a9f1
+SHA1: 626889c8234ce4ec477c59eba7938050c13d0034
+SHA256: 7ab3be95d69e9c7c5d509fadfcf584ea1962c111937ce1cf6c6bf1485a7c5fd5
+SHA512: e7c45c7b43427767605440aaeb0946c87f122c05be26dc73e70a2822b646fa8c9783a6b40c6c4181014bacabf3e45160c11d447af3344ffec446e8e014e52951
+Homepage: https://github.com/jinhyo-dev/gitpad
+Description: Git log & branch manager for the terminal
+
