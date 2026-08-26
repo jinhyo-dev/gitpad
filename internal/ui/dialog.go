@@ -8,7 +8,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 
-	"github.com/jinhyo/gitpad/internal/ui/theme"
+	"github.com/jinhyo-dev/gitpad/internal/ui/theme"
 )
 
 type dialogKind int

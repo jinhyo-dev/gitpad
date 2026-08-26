@@ -9,7 +9,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/muesli/termenv"
 
-	"github.com/jinhyo/gitpad/internal/ui/theme"
+	"github.com/jinhyo-dev/gitpad/internal/ui/theme"
 )
 
 // trunc cuts s to at most w cells, adding an ellipsis when cut.

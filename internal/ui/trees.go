@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/jinhyo/gitpad/internal/git"
+	"github.com/jinhyo-dev/gitpad/internal/git"
 )
 
 // ---- branch tree -------------------------------------------------------

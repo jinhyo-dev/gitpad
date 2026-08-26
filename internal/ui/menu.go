@@ -6,7 +6,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/jinhyo/gitpad/internal/ui/theme"
+	"github.com/jinhyo-dev/gitpad/internal/ui/theme"
 )
 
 type menuItem struct {

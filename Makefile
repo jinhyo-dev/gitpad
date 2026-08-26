@@ -1,7 +1,7 @@
 BIN := gitpad
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
-.PHONY: build run test lint install snapshot demo demo-repo clean
+.PHONY: build run test lint install snapshot demo demo-repo release-check clean
 
 DEMO_DIR ?= /tmp/gitpad-demo
 
@@ -31,6 +31,10 @@ demo-repo:
 # Record docs/demo.gif and docs/screenshots/*.png with vhs (brew install vhs).
 demo: build demo-repo
 	GITPAD_DEMO=$(DEMO_DIR) PATH="$(CURDIR):$$PATH" vhs docs/demo.tape
+
+release-check:
+	goreleaser check
+	goreleaser build --snapshot --clean --single-target
 
 clean:
 	rm -f $(BIN)

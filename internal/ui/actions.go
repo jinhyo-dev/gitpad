@@ -2,11 +2,12 @@ package ui
 
 import (
 	"os/exec"
+	"runtime"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/jinhyo/gitpad/internal/git"
+	"github.com/jinhyo-dev/gitpad/internal/git"
 )
 
 // ---- filters & loading -------------------------------------------------
@@ -164,9 +165,19 @@ func (m *Model) resetMenu(hash, label string) *menu {
 	}}
 }
 
+// openBrowser opens a URL with the platform's default handler.
 func openBrowser(url string) tea.Cmd {
 	return func() tea.Msg {
-		if err := exec.Command("open", url).Start(); err != nil {
+		var cmd *exec.Cmd
+		switch runtime.GOOS {
+		case "darwin":
+			cmd = exec.Command("open", url)
+		case "windows":
+			cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
+		default:
+			cmd = exec.Command("xdg-open", url)
+		}
+		if err := cmd.Start(); err != nil {
 			return clipboardMsg{err: err, what: "url"}
 		}
 		return nil

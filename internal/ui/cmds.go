@@ -2,14 +2,16 @@ package ui
 
 import (
 	"crypto/sha1"
+	"encoding/base64"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/atotto/clipboard"
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/jinhyo/gitpad/internal/git"
+	"github.com/jinhyo-dev/gitpad/internal/git"
 )
 
 type dataMsg struct {
@@ -200,9 +202,17 @@ func (m *Model) showToast(text string, kind int) tea.Cmd {
 	return tea.Tick(dur, func(time.Time) tea.Msg { return toastClearMsg{id: id} })
 }
 
+// copyToClipboard uses the system clipboard and falls back to OSC 52 (which
+// works over SSH and on Linux without xclip/xsel) when that is unavailable.
 func copyToClipboard(what, text string) tea.Cmd {
 	return func() tea.Msg {
-		return clipboardMsg{err: clipboard.WriteAll(text), what: what}
+		if err := clipboard.WriteAll(text); err != nil {
+			seq := "\x1b]52;c;" + base64.StdEncoding.EncodeToString([]byte(text)) + "\x07"
+			if _, werr := os.Stdout.WriteString(seq); werr != nil {
+				return clipboardMsg{err: err, what: what}
+			}
+		}
+		return clipboardMsg{what: what}
 	}
 }
 

@@ -8,8 +8,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/jinhyo/gitpad/internal/git"
-	"github.com/jinhyo/gitpad/internal/ui/theme"
+	"github.com/jinhyo-dev/gitpad/internal/git"
+	"github.com/jinhyo-dev/gitpad/internal/ui/theme"
 )
 
 // pushState backs the Push dialog: what will be sent, and to where.

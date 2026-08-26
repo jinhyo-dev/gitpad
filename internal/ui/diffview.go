@@ -7,8 +7,8 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/jinhyo/gitpad/internal/git"
-	"github.com/jinhyo/gitpad/internal/ui/theme"
+	"github.com/jinhyo-dev/gitpad/internal/git"
+	"github.com/jinhyo-dev/gitpad/internal/ui/theme"
 )
 
 type diffLine struct {

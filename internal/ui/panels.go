@@ -7,9 +7,9 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 
-	"github.com/jinhyo/gitpad/internal/git"
-	"github.com/jinhyo/gitpad/internal/graph"
-	"github.com/jinhyo/gitpad/internal/ui/theme"
+	"github.com/jinhyo-dev/gitpad/internal/git"
+	"github.com/jinhyo-dev/gitpad/internal/graph"
+	"github.com/jinhyo-dev/gitpad/internal/ui/theme"
 )
 
 // selectionBg picks the highlight color for a panel's cursor row.

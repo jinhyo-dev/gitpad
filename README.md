@@ -23,16 +23,48 @@ and a built-in diff viewer.
 
 ## Install
 
+**macOS — Homebrew**
+
 ```sh
-go install github.com/jinhyo/gitpad@latest     # or: make install
-# then, inside any repository:
+brew tap jinhyo-dev/gitpad https://github.com/jinhyo-dev/gitpad
+brew install --cask gitpad
+```
+
+**Debian / Ubuntu — apt**
+
+```sh
+curl -fsSL https://jinhyo-dev.github.io/gitpad/apt/key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/gitpad.gpg
+echo "deb [signed-by=/usr/share/keyrings/gitpad.gpg] https://jinhyo-dev.github.io/gitpad/apt stable main" | sudo tee /etc/apt/sources.list.d/gitpad.list
+sudo apt-get update && sudo apt-get install gitpad
+```
+
+`.rpm` and `.apk` packages are attached to every [release](https://github.com/jinhyo-dev/gitpad/releases).
+
+**Windows — Scoop**
+
+```powershell
+scoop bucket add gitpad https://github.com/jinhyo-dev/gitpad
+scoop install gitpad
+```
+
+Plain archives for every platform are on the [releases page](https://github.com/jinhyo-dev/gitpad/releases).
+
+**Go**
+
+```sh
+go install github.com/jinhyo-dev/gitpad@latest
+```
+
+Then, inside any repository:
+
+```sh
 gitpad            # current directory
 gitpad ~/src/app  # explicit path
 ```
 
-Requires Go 1.22+ to build and a `git` binary on `PATH`. gitpad shells out to
-your git, so hooks, credential helpers, GPG signing and every `.gitconfig`
-setting behave exactly as on the command line.
+gitpad needs a `git` binary on `PATH`. It shells out to your git, so hooks,
+credential helpers, GPG signing and every `.gitconfig` setting behave exactly
+as on the command line.
 
 ## Layout
 
@@ -122,7 +154,13 @@ make snapshot    # render one frame as plain text for layout debugging
 make build       # ./gitpad
 make demo-repo   # synthetic ~400-commit repository in /tmp/gitpad-demo
 make demo        # re-record docs/demo.gif + docs/screenshots with vhs
+make release-check  # validate .goreleaser.yaml
 ```
+
+Releases are cut by pushing a tag: `git tag v0.1.0 && git push origin v0.1.0`.
+The release workflow builds the binaries and packages, commits the Homebrew
+cask (`Casks/`) and Scoop manifest (`bucket/`) back to `main`, and publishes
+the apt repository to the `gh-pages` branch — pull `main` after a release.
 
 Structure:
 
@@ -134,7 +172,9 @@ internal/ui             bubbletea model: panels, menus, dialogs, diff viewer
 internal/ui/theme       palette & styles (Catppuccin-inspired, light fallbacks)
 internal/ui/overlay     ANSI-aware compositing for popups (CJK-width safe)
 scripts/demo-repo       generator for the anonymous demo repository (screenshots)
+scripts/apt-*.sh        apt repository signing key + index builder (release workflow)
 docs/demo.tape          vhs script that records the README media
+Casks/, bucket/         Homebrew cask and Scoop manifest, written by the release workflow
 ```
 
 ## Roadmap

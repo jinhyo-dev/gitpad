@@ -6,8 +6,8 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/jinhyo/gitpad/internal/ui/overlay"
-	"github.com/jinhyo/gitpad/internal/ui/theme"
+	"github.com/jinhyo-dev/gitpad/internal/ui/overlay"
+	"github.com/jinhyo-dev/gitpad/internal/ui/theme"
 )
 
 const (

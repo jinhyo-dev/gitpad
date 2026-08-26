@@ -8,9 +8,9 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/jinhyo/gitpad/internal/git"
-	"github.com/jinhyo/gitpad/internal/graph"
-	"github.com/jinhyo/gitpad/internal/ui/theme"
+	"github.com/jinhyo-dev/gitpad/internal/git"
+	"github.com/jinhyo-dev/gitpad/internal/graph"
+	"github.com/jinhyo-dev/gitpad/internal/ui/theme"
 )
 
 // Update handles messages.

@@ -1,0 +1,72 @@
+# Runs on every `v*` tag. Secrets required (Settings → Secrets → Actions):
+#   APT_GPG_PRIVATE_KEY  armored private key from scripts/apt-keygen.sh
+#   APT_GPG_PASSPHRASE   its passphrase
+#   APT_GPG_KEY_ID       its fingerprint / key id
+name: release
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Publish the .deb files as a signed apt repository on the gh-pages branch
+  # (served at https://jinhyo-dev.github.io/gitpad/apt).
+  apt:
+    needs: goreleaser
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download .deb packages from the release
+        run: gh release download "${GITHUB_REF_NAME}" --pattern '*.deb' --dir debs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Import signing key
+        run: |
+          echo "${APT_GPG_PRIVATE_KEY}" | gpg --batch --import
+          gpg --list-secret-keys --keyid-format long
+        env:
+          APT_GPG_PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
+      - name: Check out gh-pages (or start it)
+        run: |
+          if git ls-remote --exit-code --heads origin gh-pages; then
+            git clone --depth 1 --branch gh-pages "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" site
+          else
+            mkdir site && cd site && git init -b gh-pages
+            git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+            touch .nojekyll
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build apt repository
+        run: scripts/apt-repo.sh site/apt debs
+        env:
+          APT_GPG_KEY_ID: ${{ secrets.APT_GPG_KEY_ID }}
+          APT_GPG_PASSPHRASE: ${{ secrets.APT_GPG_PASSPHRASE }}
+      - name: Publish
+        run: |
+          cd site
+          touch .nojekyll
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "apt: ${GITHUB_REF_NAME}" || echo "nothing to publish"
+          git push origin gh-pages

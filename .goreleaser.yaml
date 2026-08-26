@@ -1,35 +1,157 @@
-# goreleaser release --clean   (requires GITHUB_TOKEN)
+# Release pipeline: `git tag v0.1.0 && git push origin v0.1.0` triggers
+# .github/workflows/release.yml, which runs `goreleaser release --clean`.
+#
+# Produces: GitHub Release (binaries, .deb/.rpm/.apk, checksums) and, committed
+# back into this repository, a Homebrew cask (Casks/gitpad.rb) and a Scoop
+# manifest (bucket/gitpad.json) — this repo doubles as the tap and the bucket,
+# so no extra repositories are needed. The winget block is ready but disabled;
+# see the comment there. Everything runs with the default GITHUB_TOKEN.
 version: 2
 project_name: gitpad
 
+before:
+  hooks:
+    - go mod tidy
+
 builds:
-  - main: .
+  - id: gitpad
+    main: .
     binary: gitpad
     env: [CGO_ENABLED=0]
     goos: [darwin, linux, windows]
     goarch: [amd64, arm64]
     ldflags:
-      - -s -w -X main.version={{.Version}}
+      - -s -w -X main.version={{ .Version }}
+    mod_timestamp: "{{ .CommitTimestamp }}"
 
 archives:
-  - formats: [tar.gz]
+  - id: default
+    formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     format_overrides:
       - goos: windows
         formats: [zip]
+    files: [LICENSE, README.md]
 
 checksum:
   name_template: checksums.txt
 
 changelog:
   sort: asc
+  use: github
   filters:
-    exclude: ["^docs:", "^test:", "^chore:"]
+    exclude: ["^docs:", "^test:", "^chore:", "^ci:"]
 
-# Uncomment once a tap repository exists (e.g. github.com/<you>/homebrew-tap):
-# brews:
-#   - repository:
-#       owner: <you>
-#       name: homebrew-tap
-#     homepage: https://github.com/<you>/gitpad
-#     description: Git log & branch manager for the terminal
+# Linux packages (attached to the release; the .deb files also feed the apt
+# repository published to GitHub Pages by the release workflow).
+nfpms:
+  - id: packages
+    package_name: gitpad
+    vendor: jinhyo-dev
+    homepage: https://github.com/jinhyo-dev/gitpad
+    maintainer: jinhyo-dev <jinhyo-dev@users.noreply.github.com>
+    description: Git log & branch manager for the terminal
+    license: MIT
+    formats: [deb, rpm, apk]
+    bindir: /usr/bin
+    section: vcs
+    priority: optional
+    dependencies: [git]
+    contents:
+      - src: LICENSE
+        dst: /usr/share/doc/gitpad/copyright
+
+# Homebrew (macOS). Casks are the current recommendation for pre-built
+# binaries; the post-install hook clears Gatekeeper's quarantine flag because
+# the binaries are not notarized.
+homebrew_casks:
+  - name: gitpad
+    repository:
+      owner: jinhyo-dev
+      name: gitpad
+      branch: main
+    directory: Casks
+    homepage: https://github.com/jinhyo-dev/gitpad
+    description: Git log & branch manager for the terminal
+    license: MIT
+    binaries: [gitpad]
+    dependencies:
+      - formula: git
+    commit_author:
+      name: goreleaser-bot
+      email: bot@goreleaser.com
+    commit_msg_template: "gitpad {{ .Tag }}"
+    hooks:
+      post:
+        install: |
+          if system_command("/usr/bin/xattr", args: ["-h"]).exit_status == 0
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/gitpad"]
+          end
+
+scoops:
+  - name: gitpad
+    repository:
+      owner: jinhyo-dev
+      name: gitpad
+      branch: main
+    directory: bucket
+    homepage: https://github.com/jinhyo-dev/gitpad
+    description: Git log & branch manager for the terminal
+    license: MIT
+    depends: [git]
+    commit_author:
+      name: goreleaser-bot
+      email: bot@goreleaser.com
+
+# winget — disabled until a fork of microsoft/winget-pkgs exists under
+# jinhyo-dev and a classic PAT (repo + workflow) is stored as RELEASE_TOKEN.
+# To enable: `gh repo fork microsoft/winget-pkgs --clone=false`, add the
+# secret, uncomment the block below and pass RELEASE_TOKEN in release.yml.
+# winget:
+#   - name: gitpad
+#     publisher: jinhyo-dev
+#     publisher_url: https://github.com/jinhyo-dev
+#     publisher_support_url: https://github.com/jinhyo-dev/gitpad/issues
+#     package_identifier: jinhyo-dev.gitpad
+#     short_description: Git log & branch manager for the terminal
+#     description: |
+#       A terminal UI for Git: branch tree, commit graph, changed files and
+#       commit details on one screen, with context menus for checkout, merge,
+#       rebase, cherry-pick, revert and reset, a commit workspace and a push dialog.
 #     license: MIT
+#     license_url: https://github.com/jinhyo-dev/gitpad/blob/main/LICENSE
+#     homepage: https://github.com/jinhyo-dev/gitpad
+#     release_notes: "{{ .Changelog }}"
+#     tags: [git, tui, terminal, developer-tools]
+#     dependencies:
+#       - package_identifier: Git.Git
+#     commit_author:
+#       name: goreleaser-bot
+#       email: bot@goreleaser.com
+#     repository:
+#       owner: jinhyo-dev
+#       name: winget-pkgs
+#       branch: "gitpad-{{ .Version }}"
+#       token: "{{ .Env.RELEASE_TOKEN }}"
+#       pull_request:
+#         enabled: true
+#         draft: false
+#         base:
+#           owner: microsoft
+#           name: winget-pkgs
+#           branch: master
+
+release:
+  github:
+    owner: jinhyo-dev
+    name: gitpad
+  name_template: "gitpad {{ .Version }}"
+  footer: |
+    ## Install
+
+    ```sh
+    brew tap jinhyo-dev/gitpad https://github.com/jinhyo-dev/gitpad && brew install --cask gitpad   # macOS
+    sudo apt-get install gitpad                                                                   # Debian / Ubuntu (repo setup in README)
+    scoop bucket add gitpad https://github.com/jinhyo-dev/gitpad && scoop install gitpad         # Windows
+    go install github.com/jinhyo-dev/gitpad@{{ .Tag }}
+    ```

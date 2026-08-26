@@ -10,8 +10,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/jinhyo/gitpad/internal/git"
-	"github.com/jinhyo/gitpad/internal/ui/theme"
+	"github.com/jinhyo-dev/gitpad/internal/git"
+	"github.com/jinhyo-dev/gitpad/internal/ui/theme"
 )
 
 // The commit workspace replaces the log pane: a file checklist on top, a

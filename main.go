@@ -9,7 +9,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/jinhyo/gitpad/internal/ui"
+	"github.com/jinhyo-dev/gitpad/internal/ui"
 )
 
 var version = "dev"
