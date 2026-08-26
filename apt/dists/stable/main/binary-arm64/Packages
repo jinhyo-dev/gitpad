@@ -15,3 +15,20 @@ SHA512: e7c45c7b43427767605440aaeb0946c87f122c05be26dc73e70a2822b646fa8c9783a6b4
 Homepage: https://github.com/jinhyo-dev/gitpad
 Description: Git log & branch manager for the terminal
 
+Package: gitpad
+Architecture: arm64
+Version: 0.2.0
+Priority: optional
+Section: vcs
+Maintainer: jinhyo-dev <jinhyo-dev@users.noreply.github.com>
+Installed-Size: 7617
+Depends: git
+Filename: pool/main/arm64/gitpad_0.2.0_linux_arm64.deb
+Size: 3018488
+MD5sum: a1cfac89053bd3203ff4a72df4757438
+SHA1: 4f83b9e48c179319b09d89eae30af43e31dd9f8f
+SHA256: b6964209df11297ebe2916db22d14e48c531d7dcc19529fabaab37599818e897
+SHA512: f0c2435804e4e2f5f73a48e90c563d2542459ec3a5fa44727b4618fe8c19aadb7d39aec9419afef619a66b4a77671e18d684fe59788798235b10119ab32b83cd
+Homepage: https://github.com/jinhyo-dev/gitpad
+Description: Git log & branch manager for the terminal
+
