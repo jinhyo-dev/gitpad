@@ -1,0 +1,10 @@
+# binaries
+/gitpad
+/dist/
+*.test
+*.out
+
+# editors / os
+.idea/
+.vscode/
+.DS_Store

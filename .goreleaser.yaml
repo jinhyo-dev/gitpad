@@ -1,0 +1,35 @@
+# goreleaser release --clean   (requires GITHUB_TOKEN)
+version: 2
+project_name: gitpad
+
+builds:
+  - main: .
+    binary: gitpad
+    env: [CGO_ENABLED=0]
+    goos: [darwin, linux, windows]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+archives:
+  - formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+  filters:
+    exclude: ["^docs:", "^test:", "^chore:"]
+
+# Uncomment once a tap repository exists (e.g. github.com/<you>/homebrew-tap):
+# brews:
+#   - repository:
+#       owner: <you>
+#       name: homebrew-tap
+#     homepage: https://github.com/<you>/gitpad
+#     description: Git log & branch manager for the terminal
+#     license: MIT
