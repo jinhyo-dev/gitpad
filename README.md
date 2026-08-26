@@ -71,12 +71,12 @@ as on the command line.
 | Pane | Content |
 |---|---|
 | **Branches** | HEAD, Local (grouped by `/`), Remote (per remote), Tags — with ahead/behind counters |
-| **Log** | Commit graph, author, date, subject, ref chips; an *Uncommitted changes* row on top when the tree is dirty |
+| **Log** | Commit graph, author, date, CI status (✓ ✗ ◌), subject, ref chips; an *Uncommitted changes* row on top when the tree is dirty |
 | **Changes** | Files changed by the selected commit (or the working tree), as a compacted directory tree |
 | **Details** | Full message, hash, author, date, refs |
 
-The filter bar offers **text / hash**, **branch**, **user** and **path**
-filters. Typing a hash prefix jumps straight to that commit.
+The search box matches commit messages **and** author names; **branch** and
+**path** filters sit next to it. Typing a hash prefix jumps straight to that commit.
 
 ## Keys
 
@@ -87,7 +87,9 @@ filters. Typing a hash prefix jumps straight to that commit.
 | `enter` `m` / right-click | context menu (commit, branch, file) |
 | `space` | fold / unfold tree nodes |
 | `←` `→` | fold / unfold; on a leaf (or nothing left to fold) move to the previous / next pane |
-| `/` | search text or hash · `a` filter by author · `A` all branches ↔ current · `esc` clear |
+| `/` | search message, author or hash · `A` all branches ↔ current · `esc` clear |
+| `↑` / `↓` | past the top of a pane → search bar · past the last file → Details pane |
+| `←` / `→` in the filter bar | move between the search box and the **Branch** chip; `enter` on the chip opens a type-to-filter branch picker, `esc` clears the branch filter |
 | `c` / `C` | checkout (branches) · commit workspace (elsewhere / anywhere) |
 | `space` / `a` | check a file / all files for commit (local changes) |
 | `s` | show branch in log (branches) |
@@ -110,6 +112,15 @@ Checkout revision · New branch/tag here · Cherry-pick · Revert · Reset
 (soft/mixed/hard) · Undo last commit · per-branch submenu (checkout, merge
 into current, rebase current onto, push, rename, delete) · Copy hash ·
 Open in browser.
+
+### CI status
+
+When `origin` points at GitHub and a token is available (`GH_TOKEN`,
+`GITHUB_TOKEN`, or a logged-in `gh` CLI), every commit shows its combined
+check status — ✓ passed, ✗ failed, ◌ running — fetched in batches through the
+GraphQL API and refreshed while checks are running. The Details pane lists the
+individual checks with durations; *Open checks in browser* is in the commit
+menu. Other hosts (GitLab, Gitea…) are planned.
 
 ### Commit workspace (`c` / `C`)
 

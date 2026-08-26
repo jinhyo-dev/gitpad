@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/jinhyo-dev/gitpad/internal/ci"
 	"github.com/jinhyo-dev/gitpad/internal/git"
 	"github.com/jinhyo-dev/gitpad/internal/graph"
 	"github.com/jinhyo-dev/gitpad/internal/ui/theme"
@@ -23,7 +24,42 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		mm.ready = true
 		mm.layout()
 	case initMsg:
-		cmd = tea.Batch(mm.loadAll(""), watchTick())
+		cmd = tea.Batch(mm.loadAll(""), watchTick(), mm.initCI())
+	case ciInitMsg:
+		if msg.p != nil {
+			mm.ci = msg.p
+			mm.ciResults = map[string]ci.Result{}
+			mm.ciPending = map[string]bool{}
+		}
+	case ciMsg:
+		mm.ciBusy = false
+		for _, s := range msg.shas {
+			delete(mm.ciPending, s)
+		}
+		if msg.err != nil {
+			mm.ciErr = true
+			cmd = mm.showToast("CI status unavailable: "+msg.err.Error(), 0)
+			break
+		}
+		pending := false
+		for _, s := range msg.shas {
+			r := msg.results[s]
+			mm.ciResults[s] = r
+			if r.State == ci.StatePending {
+				pending = true
+			}
+		}
+		if pending && !mm.ciTicking {
+			mm.ciTicking = true
+			cmd = ciRefreshTick()
+		}
+	case ciRefreshMsg:
+		mm.ciTicking = false
+		for s, r := range mm.ciResults {
+			if r.State == ci.StatePending {
+				delete(mm.ciResults, s) // refetched below
+			}
+		}
 	case tea.KeyMsg:
 		if mm.fatal != nil {
 			return m, tea.Quit
@@ -106,6 +142,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	if mm.loading < 0 {
 		mm.loading = 0
+	}
+	if mm.ci != nil {
+		cmd = tea.Batch(cmd, mm.fetchCI())
 	}
 	// Start exactly one spinner tick chain per loading period. Batching a
 	// tick on every message would create an immediate-message busy loop.
@@ -245,6 +284,8 @@ func (m *Model) handleKey(k tea.KeyMsg) tea.Cmd {
 		return nil
 	case m.searching:
 		return m.searchKey(k)
+	case m.barBranch:
+		return m.branchChipKey(k)
 	case m.push != nil:
 		return m.pushKey(k)
 	case m.commitOpen:
@@ -268,28 +309,35 @@ func (m *Model) handleKey(k tea.KeyMsg) tea.Cmd {
 		return nil
 	case "tab":
 		m.focus = (m.focus + 1) % panelCount
+		m.detailsFocus = false
 		return nil
 	case "shift+tab":
 		m.focus = (m.focus + panelCount - 1) % panelCount
+		m.detailsFocus = false
 		return nil
 	case "1":
 		m.focus = PanelBranches
+		m.detailsFocus = false
 		return nil
 	case "2":
 		m.focus = PanelLog
+		m.detailsFocus = false
 		return nil
 	case "3":
 		m.focus = PanelChanges
+		m.detailsFocus = false
 		return nil
 	case "h":
 		if m.focus > 0 {
 			m.focus--
 		}
+		m.detailsFocus = false
 		return nil
 	case "l":
 		if m.focus < panelCount-1 {
 			m.focus++
 		}
+		m.detailsFocus = false
 		return nil
 	case "r":
 		return m.reload()
@@ -305,13 +353,12 @@ func (m *Model) handleKey(k tea.KeyMsg) tea.Cmd {
 	case "C":
 		return m.openCommit()
 	case "/":
-		return m.startSearch(searchText)
+		return m.startSearch()
 	case "a":
 		if m.focus == PanelChanges && m.filesFor == "local" {
 			m.toggleAllSelection()
-			return nil
 		}
-		return m.startSearch(searchAuthor)
+		return nil
 	case "A":
 		m.logOpts.All = !m.logOpts.All
 		m.logOpts.Ref = ""
@@ -336,6 +383,9 @@ func (m *Model) handleKey(k tea.KeyMsg) tea.Cmd {
 		return nil
 	}
 
+	if m.detailsFocus {
+		return m.detailsKey(key)
+	}
 	if m.diff != nil && m.focus != PanelBranches {
 		if cmd, handled := m.diffKey(key); handled {
 			return cmd
@@ -362,6 +412,22 @@ func (m *Model) handleKey(k tea.KeyMsg) tea.Cmd {
 	}
 }
 
+// edge reports whether a vertical move would leave the list: -1 above the
+// first row, +1 below the last row, 0 otherwise.
+func edge(key string, cur, n int) int {
+	switch key {
+	case "k", "up":
+		if cur <= 0 {
+			return -1
+		}
+	case "j", "down":
+		if n == 0 || cur >= n-1 {
+			return 1
+		}
+	}
+	return 0
+}
+
 func (m *Model) navigate(key string, cur *int, n, page int) bool {
 	if n == 0 {
 		return false
@@ -386,6 +452,9 @@ func (m *Model) navigate(key string, cur *int, n, page int) bool {
 }
 
 func (m *Model) branchesKey(key string) tea.Cmd {
+	if edge(key, m.bcur, len(m.bnodes)) < 0 {
+		return m.startSearch()
+	}
 	if m.navigate(key, &m.bcur, len(m.bnodes), m.rects[PanelBranches].h/2) {
 		return nil
 	}
@@ -455,6 +524,9 @@ func (m *Model) branchesKey(key string) tea.Cmd {
 }
 
 func (m *Model) logKey(key string) tea.Cmd {
+	if edge(key, m.lcur, m.logLen()) < 0 {
+		return m.startSearch()
+	}
 	prev := m.lcur
 	if m.navigate(key, &m.lcur, m.logLen(), m.rects[PanelLog].h/2) {
 		var cmd tea.Cmd
@@ -499,6 +571,15 @@ func (m *Model) logKey(key string) tea.Cmd {
 }
 
 func (m *Model) filesKey(key string) tea.Cmd {
+	switch edge(key, m.fcur, len(m.fnodes)) {
+	case -1:
+		return m.startSearch()
+	case 1:
+		// Past the last file: hand the keyboard to the Details pane.
+		m.detailsFocus = true
+		m.dscroll = 0
+		return nil
+	}
 	if m.navigate(key, &m.fcur, len(m.fnodes), m.rects[PanelChanges].h/2) {
 		if m.diff != nil {
 			if n := m.selectedFileNode(); n != nil && !n.isDir {
@@ -588,6 +669,33 @@ func (m *Model) filesKey(key string) tea.Cmd {
 	return nil
 }
 
+// detailsKey scrolls the Details pane; ↑ at the top returns to the file list.
+func (m *Model) detailsKey(key string) tea.Cmd {
+	switch key {
+	case "j", "down":
+		m.dscroll++
+	case "k", "up":
+		if m.dscroll == 0 {
+			m.detailsFocus = false
+			return nil
+		}
+		m.dscroll--
+	case "ctrl+d", "pgdown":
+		m.dscroll += m.detailsRect.h / 2
+	case "ctrl+u", "pgup":
+		m.dscroll = maxInt(0, m.dscroll-m.detailsRect.h/2)
+	case "g", "home":
+		m.dscroll = 0
+	case "esc", "tab", "shift+tab", "1", "2", "3", "h", "l", "left", "right":
+		m.detailsFocus = false
+		return m.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(key)})
+	default:
+		m.detailsFocus = false
+		return m.filesKey(key)
+	}
+	return nil
+}
+
 func (m *Model) diffKey(key string) (tea.Cmd, bool) {
 	d := m.diff
 	h := m.rects[PanelLog].h
@@ -652,9 +760,34 @@ func (m *Model) menuKey(k tea.KeyMsg) tea.Cmd {
 		mn.move(1)
 	case "k", "up":
 		mn.move(-1)
-	case "enter", "right", " ":
+	case "enter":
 		return m.activateMenuItem()
+	case "right", " ":
+		if !mn.filterable {
+			return m.activateMenuItem()
+		}
+		if k.String() == " " {
+			mn.filter += " "
+			mn.refilter()
+		}
+	case "backspace":
+		if mn.filterable && mn.filter != "" {
+			mn.filter = mn.filter[:len(mn.filter)-1]
+			mn.refilter()
+		}
+	case "ctrl+u":
+		if mn.filterable {
+			mn.filter = ""
+			mn.refilter()
+		}
 	default:
+		if mn.filterable {
+			if k.Type == tea.KeyRunes {
+				mn.filter += string(k.Runes)
+				mn.refilter()
+			}
+			return nil
+		}
 		s := k.String()
 		for i, it := range mn.items {
 			if !it.sep && !it.disabled && it.key != "" && it.key == s {
@@ -701,16 +834,9 @@ func (m *Model) dialogKey(k tea.KeyMsg) tea.Cmd {
 	return cmd
 }
 
-func (m *Model) startSearch(kind searchKind) tea.Cmd {
+func (m *Model) startSearch() tea.Cmd {
 	m.searching = true
-	m.searchKind = kind
-	if kind == searchAuthor {
-		m.search.Placeholder = "author name or email"
-		m.search.SetValue(m.logOpts.Author)
-	} else {
-		m.search.Placeholder = "Text or hash"
-		m.search.SetValue(m.logOpts.Grep)
-	}
+	m.search.SetValue(m.logOpts.Grep)
 	m.search.CursorEnd()
 	return m.search.Focus()
 }
@@ -721,14 +847,31 @@ func (m *Model) searchKey(k tea.KeyMsg) tea.Cmd {
 		m.searching = false
 		m.search.Blur()
 		return nil
+	case "down", "tab":
+		// Leave the search bar downwards; apply the text if it changed.
+		m.searching = false
+		m.search.Blur()
+		if v := strings.TrimSpace(m.search.Value()); v != m.logOpts.Grep {
+			m.logOpts.Grep = v
+			return m.applyFilter()
+		}
+		return nil
+	case "right":
+		// At the end of the text, → moves on to the Branch chip.
+		if m.search.Position() >= len([]rune(m.search.Value())) {
+			m.searching = false
+			m.search.Blur()
+			m.barBranch = true
+			if v := strings.TrimSpace(m.search.Value()); v != m.logOpts.Grep {
+				m.logOpts.Grep = v
+				return m.applyFilter()
+			}
+			return nil
+		}
 	case "enter":
 		m.searching = false
 		m.search.Blur()
 		v := strings.TrimSpace(m.search.Value())
-		if m.searchKind == searchAuthor {
-			m.logOpts.Author = v
-			return m.applyFilter()
-		}
 		// A hash prefix jumps straight to the commit.
 		if isHexPrefix(v) {
 			if full, ok := m.repo.ResolveHash(v); ok {
@@ -748,6 +891,99 @@ func (m *Model) searchKey(k tea.KeyMsg) tea.Cmd {
 	var cmd tea.Cmd
 	m.search, cmd = m.search.Update(k)
 	return cmd
+}
+
+// branchChipKey handles the focused Branch chip in the filter bar.
+func (m *Model) branchChipKey(k tea.KeyMsg) tea.Cmd {
+	switch k.String() {
+	case "left":
+		m.barBranch = false
+		return m.startSearch()
+	case "enter", " ", "right":
+		m.openBranchPicker()
+		return nil
+	case "esc":
+		// Clear the branch filter and go back to the log.
+		m.barBranch = false
+		if m.logOpts.Ref != "" || !m.logOpts.All {
+			m.logOpts.Ref, m.logOpts.All = "", true
+			return m.applyFilter()
+		}
+		return nil
+	case "down", "tab", "q":
+		m.barBranch = false
+		return nil
+	case "ctrl+c":
+		return tea.Quit
+	}
+	return nil
+}
+
+// openBranchPicker shows every branch as a scrollable, type-to-filter list.
+func (m *Model) openBranchPicker() {
+	cur := m.currentBranch()
+	pick := func(ref string, all bool) func(m *Model) tea.Cmd {
+		return func(m *Model) tea.Cmd {
+			m.barBranch = false
+			m.logOpts.Ref, m.logOpts.All = ref, all
+			return m.applyFilter()
+		}
+	}
+	items := []menuItem{
+		{label: "All branches", run: pick("", true)},
+		{label: "Current branch (" + cur + ")", run: pick("", false)},
+	}
+	if len(m.refs.Locals) > 0 {
+		items = append(items, sep())
+		for _, b := range m.refs.Locals {
+			items = append(items, menuItem{label: b.Name, run: pick(b.Name, false)})
+		}
+	}
+	if len(m.refs.Remotes) > 0 {
+		items = append(items, sep())
+		for _, b := range m.refs.Remotes {
+			items = append(items, menuItem{label: b.Name, run: pick(b.Name, false)})
+		}
+	}
+	if len(m.refs.Tags) > 0 {
+		items = append(items, sep())
+		for _, b := range m.refs.Tags {
+			items = append(items, menuItem{label: "⌂ " + b.Name, run: pick(b.Name, false)})
+		}
+	}
+	mn := &menu{title: "Branch", items: items, filterable: true}
+	// Preselect the active choice.
+	for i, it := range items {
+		switch {
+		case m.logOpts.Ref != "" && (it.label == m.logOpts.Ref || it.label == "⌂ "+m.logOpts.Ref):
+			mn.cur = i
+		case m.logOpts.Ref == "" && !m.logOpts.All && i == 1:
+			mn.cur = i
+		}
+	}
+	x, _ := m.branchChipPos()
+	m.openMenu(mn, x, rowFilter+1)
+}
+
+// branchChipPos returns the x position and width of the Branch chip.
+func (m *Model) branchChipPos() (int, int) {
+	pos := 1
+	searchW := width(theme.FilterChip.Render("⌕ " + trunc(orDefault(m.logOpts.Grep, searchPlaceholder), 36)))
+	if m.searching {
+		searchW = width(theme.FilterInput.Render("⌕ " + m.search.View()))
+	}
+	pos += searchW + 2
+	return pos, width(theme.FilterChip.Render(m.branchLabel()))
+}
+
+func (m *Model) branchLabel() string {
+	switch {
+	case m.logOpts.Ref != "":
+		return "Branch: " + trunc(m.logOpts.Ref, 24) + " ▾"
+	case !m.logOpts.All:
+		return "Branch: " + trunc(m.currentBranch(), 24) + " ▾"
+	}
+	return "Branch: All ▾"
 }
 
 func isHexPrefix(s string) bool {
@@ -826,6 +1062,7 @@ func (m *Model) handleMouse(msg tea.MouseMsg) tea.Cmd {
 		m.searching = false
 		m.search.Blur()
 	}
+	m.barBranch = false
 	switch msg.Y {
 	case rowHeader:
 		return m.headerClick(msg.X)
@@ -836,10 +1073,12 @@ func (m *Model) handleMouse(msg tea.MouseMsg) tea.Cmd {
 	if !ok {
 		if m.detailsRect.contains(msg.X, msg.Y) {
 			m.focus = PanelChanges
+			m.detailsFocus = true
 		}
 		return nil
 	}
 	m.focus = p
+	m.detailsFocus = false
 	row := m.scrollOf(p) + msg.Y - m.rects[p].y
 	right := msg.Button == tea.MouseButtonRight
 	switch p {
@@ -985,33 +1224,17 @@ func (m *Model) headerClick(x int) tea.Cmd {
 func (m *Model) filterClick(x int) tea.Cmd {
 	// Reconstruct chip extents in the same order as renderFilterBar.
 	pos := 1
-	searchW := width(theme.FilterChip.Render("⌕ " + trunc(orDefault(m.logOpts.Grep, "Text or hash"), 28)))
+	searchW := width(theme.FilterChip.Render("⌕ " + trunc(orDefault(m.logOpts.Grep, searchPlaceholder), 36)))
 	if x >= pos && x < pos+searchW {
-		return m.startSearch(searchText)
+		return m.startSearch()
 	}
-	pos += searchW + 2
-	branchLabel := "Branch: All"
-	if m.logOpts.Ref != "" {
-		branchLabel = "Branch: " + trunc(m.logOpts.Ref, 24)
-	} else if !m.logOpts.All {
-		branchLabel = "Branch: " + trunc(m.currentBranch(), 24)
+	bx, bw := m.branchChipPos()
+	if x >= bx && x < bx+bw {
+		m.barBranch = true
+		m.openBranchPicker()
+		return nil
 	}
-	bw := width(theme.FilterChip.Render(branchLabel))
-	if x >= pos && x < pos+bw {
-		m.logOpts.All = !m.logOpts.All
-		m.logOpts.Ref = ""
-		return m.applyFilter()
-	}
-	pos += bw + 2
-	userLabel := "User: Any"
-	if m.logOpts.Author != "" {
-		userLabel = "User: " + trunc(m.logOpts.Author, 20)
-	}
-	uw := width(theme.FilterChip.Render(userLabel))
-	if x >= pos && x < pos+uw {
-		return m.startSearch(searchAuthor)
-	}
-	pos += uw + 2
+	pos = bx + bw + 2
 	if len(m.logOpts.Paths) > 0 {
 		pw := width(theme.FilterChip.Render("Path: " + trunc(m.logOpts.Paths[0], 30)))
 		if x >= pos && x < pos+pw {

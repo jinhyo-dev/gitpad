@@ -123,49 +123,39 @@ func (m *Model) renderFilterBar() string {
 	var sb strings.Builder
 	sb.WriteString(" ")
 	if m.searching {
-		label := "⌕ "
-		if m.searchKind == searchAuthor {
-			label = "user "
-		}
-		sb.WriteString(theme.FilterInput.Render(label + m.search.View()))
+		sb.WriteString(theme.FilterInput.Render("⌕ " + m.search.View()))
 	} else {
 		text := m.logOpts.Grep
 		st := theme.FilterChip
 		if text == "" {
-			text = "Text or hash"
+			text = searchPlaceholder
 		} else {
 			st = theme.FilterChipActive
 		}
-		sb.WriteString(st.Render("⌕ " + trunc(text, 28)))
+		sb.WriteString(st.Render("⌕ " + trunc(text, 36)))
 	}
 	sb.WriteString("  ")
 
-	branchLabel := "Branch: All"
 	branchSt := theme.FilterChip
-	switch {
-	case m.logOpts.Ref != "":
-		branchLabel = "Branch: " + trunc(m.logOpts.Ref, 24)
-		branchSt = theme.FilterChipActive
-	case !m.logOpts.All:
-		branchLabel = "Branch: " + trunc(m.currentBranch(), 24)
+	if m.logOpts.Ref != "" || !m.logOpts.All {
 		branchSt = theme.FilterChipActive
 	}
-	sb.WriteString(branchSt.Render(branchLabel) + "  ")
-
-	userLabel, userSt := "User: Any", theme.FilterChip
-	if m.logOpts.Author != "" {
-		userLabel, userSt = "User: "+trunc(m.logOpts.Author, 20), theme.FilterChipActive
+	if m.barBranch {
+		branchSt = theme.FilterChipFocus
 	}
-	sb.WriteString(userSt.Render(userLabel) + "  ")
+	sb.WriteString(branchSt.Render(m.branchLabel()) + "  ")
 
 	if len(m.logOpts.Paths) > 0 {
 		sb.WriteString(theme.FilterChipActive.Render("Path: "+trunc(m.logOpts.Paths[0], 30)) + "  ")
 	}
 	right := ""
-	if m.hasFilter() && !m.searching {
+	switch {
+	case m.barBranch:
+		right = keyHints("enter", "choose branch", "esc", "clear", "←", "search", "↓", "log") + " "
+	case m.searching:
+		right = keyHints("enter", "apply", "→", "branch", "esc", "cancel") + " "
+	case m.hasFilter():
 		right = theme.KeyHint.Render("esc") + theme.KeyLabel.Render(" clear filters ")
-	} else if m.searching {
-		right = theme.KeyHint.Render("enter") + theme.KeyLabel.Render(" apply  ") + theme.KeyHint.Render("esc") + theme.KeyLabel.Render(" cancel ")
 	}
 	return highlight(joinRow(sb.String(), right, m.width), theme.Surface)
 }
@@ -210,7 +200,7 @@ func (m *Model) renderPanels() string {
 		filesTitle = "Local Changes"
 	}
 	files := frame(filesTitle, fmt.Sprintf("%d", len(m.files)), m.renderFiles(ch.w, ch.h), ch.w, ch.h, m.focus == PanelChanges)
-	details := frame("Details", "", m.renderDetails(dt.w, dt.h), dt.w, dt.h, false)
+	details := frame("Details", "", m.renderDetails(dt.w, dt.h), dt.w, dt.h, m.detailsFocus && m.focus == PanelChanges)
 	right := lipgloss.JoinVertical(lipgloss.Left, files, details)
 	return lipgloss.JoinHorizontal(lipgloss.Top, branches, center, right)
 }
@@ -266,8 +256,10 @@ func (m *Model) renderStatusBar() string {
 		hints = keyHints("j/k", "scroll", "`", "back to log")
 	case m.focus == PanelBranches:
 		hints = keyHints("enter", "actions", "c", "checkout", "C", "commit", "P", "push", "p", "pull", "f", "fetch", "s", "show in log", "←→", "fold/section")
+	case m.detailsFocus:
+		hints = keyHints("j/k", "scroll", "↑", "back to files", "esc", "back")
 	case m.focus == PanelLog:
-		hints = keyHints("enter", "actions", "c", "commit", "P", "push", "p", "pull", "f", "fetch", "/", "search", "a", "user", "A", "all/head", "y", "copy hash", "←→", "section")
+		hints = keyHints("enter", "actions", "c", "commit", "P", "push", "p", "pull", "f", "fetch", "/", "search", "A", "all/head", "y", "copy hash", "←→", "section")
 	default:
 		if m.filesFor == "local" {
 			hints = keyHints("space", "check", "c", "commit", "P", "push", "enter", "diff", "d", "discard", "H", "history", "←→", "fold/section")
@@ -282,6 +274,9 @@ func (m *Model) renderStatusBar() string {
 		hints = keyHints("ctrl+s", "commit", "ctrl+p", "commit & push", "↑", "history", "tab", "buttons", "esc", "files")
 	case m.commitOpen:
 		hints = keyHints("space", "check", "a", "check all", "enter/tab", "message", "d", "discard", "ctrl+s", "commit", "esc", "back")
+	}
+	if m.menu == nil && m.dialog == nil && m.push == nil {
+		hints += theme.DimSt.Render("  ") + theme.QuitKey.Render("q") + " " + theme.KeyLabel.Render("exit")
 	}
 	right := ""
 	if m.toast != nil {
@@ -309,7 +304,7 @@ func (m *Model) renderHelp() string {
 	}
 	sections := []section{
 		{"Navigation", []row{{"tab / 1 2 3 / h l", "switch panel"}, {"j k ↑ ↓", "move"}, {"g / G", "top / bottom"}, {"ctrl+d / ctrl+u", "half page"}, {"space", "fold / unfold tree"}, {"← →", "fold / unfold, then previous / next pane"}, {"mouse", "click · right-click · wheel"}}},
-		{"Log", []row{{"enter / m / right-click", "commit actions"}, {"/", "search text or hash"}, {"a", "filter by author"}, {"A", "all branches ↔ current"}, {"y", "copy hash"}, {"esc", "clear filters"}}},
+		{"Log", []row{{"enter / m / right-click", "commit actions"}, {"✓ ✗ ◌", "CI status (GitHub, via gh token)"}, {"/", "search message, author or hash"}, {"↑ at top", "jump to the search bar"}, {"→ / enter (filter bar)", "branch picker · esc clears"}, {"A", "all branches ↔ current"}, {"y", "copy hash"}, {"esc", "clear filters"}}},
 		{"Branches", []row{{"enter / m", "branch actions"}, {"c", "checkout"}, {"s", "show branch in log"}, {"d", "delete"}, {"f / p / P", "fetch / pull / push"}}},
 		{"Changes", []row{{"enter", "open diff"}, {"n / p", "next / prev file (in diff)"}, {"space / a", "check file / all (local)"}, {"c / C", "commit workspace"}, {"d", "discard (local)"}, {"H", "file history in log"}}},
 		{"Commit & Push", []row{{"ctrl+s", "commit selected files"}, {"ctrl+p", "commit & push"}, {"↑ (in message)", "previous messages"}, {"P", "push dialog"}, {"p", "pull (merge / rebase / fetch)"}}},

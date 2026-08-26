@@ -9,10 +9,13 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/jinhyo-dev/gitpad/internal/ci"
 	"github.com/jinhyo-dev/gitpad/internal/git"
 	"github.com/jinhyo-dev/gitpad/internal/graph"
 	"github.com/jinhyo-dev/gitpad/internal/ui/theme"
 )
+
+const searchPlaceholder = "Search message, author or hash"
 
 // Panel identifies one of the three main panes.
 type Panel int
@@ -29,13 +32,6 @@ type rect struct{ x, y, w, h int }
 func (r rect) contains(x, y int) bool {
 	return x >= r.x && x < r.x+r.w && y >= r.y && y < r.y+r.h
 }
-
-type searchKind int
-
-const (
-	searchText searchKind = iota
-	searchAuthor
-)
 
 type toast struct {
 	id   int
@@ -96,6 +92,14 @@ type Model struct {
 	push       *pushState
 	lastPull   string // merge | rebase | fetch
 
+	// CI status column (GitHub checks), keyed by commit hash
+	ci        ci.Provider
+	ciResults map[string]ci.Result
+	ciPending map[string]bool
+	ciBusy    bool
+	ciErr     bool
+	ciTicking bool
+
 	// console tab
 	console bool
 	cscroll int
@@ -105,9 +109,11 @@ type Model struct {
 	dialog *dialog
 	help   bool
 
-	search     textinput.Model
-	searching  bool
-	searchKind searchKind
+	search    textinput.Model
+	searching bool
+	barBranch bool // the Branch chip in the filter bar has keyboard focus
+	// focus target that a search / details focus returns to
+	detailsFocus bool
 
 	spin     spinner.Model
 	spinning bool // a spinner tick chain is alive
@@ -137,9 +143,9 @@ func New(path string) Model {
 	}
 	ti := textinput.New()
 	ti.Prompt = ""
-	ti.Placeholder = "Text or hash"
+	ti.Placeholder = searchPlaceholder
 	ti.CharLimit = 200
-	ti.Width = 30
+	ti.Width = 36
 	ti.PromptStyle = lipgloss.NewStyle()
 	ti.TextStyle = lipgloss.NewStyle().Foreground(theme.Text)
 	ti.PlaceholderStyle = lipgloss.NewStyle().Foreground(theme.Dim)

@@ -42,8 +42,8 @@ func (c Commit) IsMerge() bool { return len(c.Parents) > 1 }
 type LogOptions struct {
 	All    bool   // every branch / tag (default: HEAD only)
 	Ref    string // restrict to a ref (overrides All)
-	Grep   string // subject/body text
-	Author string
+	Grep   string // matches the message OR the author name/email
+	Author string // author only (used internally by Log for the OR)
 	Paths  []string
 	Limit  int
 	Extra  []string // raw revision arguments (e.g. "@{u}..HEAD", "--not", "--remotes")
@@ -51,11 +51,53 @@ type LogOptions struct {
 
 const logFormat = "%H%x1f%P%x1f%an%x1f%ae%x1f%at%x1f%D%x1f%s"
 
-// Log lists commits in date order (parents always after children).
+// Log lists commits in date order (parents always after children). A Grep
+// query matches either the message or the author, which git cannot express
+// in one command, so two queries are merged by date.
 func (r *Runner) Log(o LogOptions) ([]Commit, error) {
 	if o.Limit <= 0 {
 		o.Limit = 1000
 	}
+	if o.Grep == "" {
+		return r.logOnce(o)
+	}
+	byMsg, err := r.logOnce(o)
+	if err != nil {
+		return nil, err
+	}
+	a := o
+	a.Grep, a.Author = "", o.Grep
+	byAuthor, err := r.logOnce(a)
+	if err != nil {
+		return nil, err
+	}
+	return mergeByDate(byMsg, byAuthor), nil
+}
+
+// mergeByDate merges two date-ordered lists, dropping duplicates.
+func mergeByDate(a, b []Commit) []Commit {
+	out := make([]Commit, 0, len(a)+len(b))
+	seen := make(map[string]bool, len(a)+len(b))
+	i, j := 0, 0
+	for i < len(a) || j < len(b) {
+		var next Commit
+		switch {
+		case j >= len(b) || (i < len(a) && !a[i].When.Before(b[j].When)):
+			next = a[i]
+			i++
+		default:
+			next = b[j]
+			j++
+		}
+		if !seen[next.Hash] {
+			seen[next.Hash] = true
+			out = append(out, next)
+		}
+	}
+	return out
+}
+
+func (r *Runner) logOnce(o LogOptions) ([]Commit, error) {
 	args := []string{"log", "--date-order", "--decorate=full", "--format=" + logFormat, "--max-count=" + strconv.Itoa(o.Limit)}
 	switch {
 	case len(o.Extra) > 0:

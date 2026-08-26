@@ -88,7 +88,7 @@ type harness struct {
 }
 
 func newHarness(t *testing.T, dir string, w, h int) *harness {
-	toastDuration, toastErrDuration, watchInterval, selectDebounce = time.Millisecond, time.Millisecond, time.Millisecond, 0
+	toastDuration, toastErrDuration, watchInterval, selectDebounce, ciRefreshInterval = time.Millisecond, time.Millisecond, time.Millisecond, 0, time.Millisecond
 	m := New(dir)
 	if m.fatal != nil {
 		t.Fatal(m.fatal)
@@ -184,12 +184,75 @@ func TestWalkthrough(t *testing.T) {
 		t.Fatal("filters should be cleared")
 	}
 
-	// Author filter.
-	h.press("a", "n", "o", "b", "o", "d", "y", "enter")
+	// The same box matches author names ("Tester" wrote everything).
+	h.press("/", "T", "e", "s", "t", "e", "r", "enter")
+	if len(h.m().commits) != 5 {
+		t.Fatalf("author search should match all commits, got %d", len(h.m().commits))
+	}
+	h.press("/", "n", "o", "b", "o", "d", "y", "enter")
 	if len(h.m().commits) != 0 {
-		t.Fatal("author filter should yield no commits")
+		t.Fatal("unmatched search should yield no commits")
 	}
 	h.press("esc")
+
+	// ↑ at the top of a pane opens the search bar; ↓ leaves it again.
+	h.press("2", "g", "up")
+	if !h.m().searching {
+		t.Fatal("↑ on the first row should focus the search bar")
+	}
+	h.press("down")
+	if h.m().searching {
+		t.Fatal("↓ should leave the search bar")
+	}
+	// Filter bar: → from the search box focuses the Branch chip, Enter opens
+	// the picker, typing narrows it, Enter applies the branch filter.
+	h.press("/", "right")
+	m = h.m()
+	if m.searching || !m.barBranch {
+		t.Fatalf("→ at the end of the search text should focus the Branch chip (searching=%v chip=%v)", m.searching, m.barBranch)
+	}
+	if !strings.Contains(ansi.Strip(h.model.View()), "Branch: All ▾") {
+		t.Fatal("branch chip should render with a dropdown marker")
+	}
+	h.press("enter")
+	m = h.m()
+	if m.menu == nil || !m.menu.filterable || len(m.menu.items) < 4 {
+		t.Fatalf("branch picker should open with branches: %+v", m.menu)
+	}
+	h.press("s", "i", "d", "e")
+	m = h.m()
+	if m.menu.filter != "side" || m.menu.items[m.menu.cur].label != "feat/side" {
+		t.Fatalf("typing should filter the picker: filter=%q cur=%q", m.menu.filter, m.menu.items[m.menu.cur].label)
+	}
+	h.press("enter")
+	m = h.m()
+	if m.logOpts.Ref != "feat/side" || m.barBranch || len(m.commits) != 3 {
+		t.Fatalf("picking a branch should filter the log: ref=%q commits=%d", m.logOpts.Ref, len(m.commits))
+	}
+	// Esc on the focused chip clears the branch filter; ← goes back to search.
+	h.press("/", "right", "esc")
+	m = h.m()
+	if m.logOpts.Ref != "" || !m.logOpts.All || m.barBranch {
+		t.Fatalf("esc on the chip should clear the branch filter: %+v", m.logOpts)
+	}
+	h.press("/", "right", "left")
+	if !h.m().searching {
+		t.Fatal("← from the chip should return to the search box")
+	}
+	h.press("esc")
+	if !strings.Contains(ansi.Strip(h.model.View()), "q exit") {
+		t.Fatal("status bar should show q exit")
+	}
+
+	// ↓ past the last file hands over to the Details pane, ↑ comes back.
+	h.press("3", "G", "down")
+	if !h.m().detailsFocus {
+		t.Fatal("↓ past the last file should focus Details")
+	}
+	h.press("down", "up", "up")
+	if h.m().detailsFocus {
+		t.Fatal("↑ at the top of Details should return to the files")
+	}
 
 	// Open the diff of the first file of the merge commit.
 	h.press("j", "3", "enter")

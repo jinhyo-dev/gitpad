@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
@@ -11,8 +12,68 @@ import (
 	"github.com/atotto/clipboard"
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/jinhyo-dev/gitpad/internal/ci"
 	"github.com/jinhyo-dev/gitpad/internal/git"
 )
+
+// Timings for the CI column.
+var (
+	ciRefreshInterval = 30 * time.Second
+	ciLookahead       = 60 // rows below the viewport to prefetch
+	ciLookbehind      = 20
+)
+
+// initCI detects the hosting provider from the origin remote.
+func (m *Model) initCI() tea.Cmd {
+	repo := m.repo
+	return func() tea.Msg {
+		out, err := repo.Run("remote", "get-url", "origin")
+		if err != nil {
+			return ciInitMsg{}
+		}
+		return ciInitMsg{p: ci.Detect(strings.TrimSpace(out))}
+	}
+}
+
+// fetchCI requests status for commits around the viewport that are not
+// cached yet. One request is in flight at a time.
+func (m *Model) fetchCI() tea.Cmd {
+	if m.ci == nil || m.ciBusy || m.ciErr || m.commitOpen {
+		return nil
+	}
+	h := m.rects[PanelLog].h
+	start := maxInt(0, m.lscroll-ciLookbehind)
+	end := minInt(m.logLen(), m.lscroll+h+ciLookahead)
+	var shas []string
+	for row := start; row < end; row++ {
+		c := m.commitAt(row)
+		if c == nil {
+			continue
+		}
+		if _, ok := m.ciResults[c.Hash]; ok || m.ciPending[c.Hash] {
+			continue
+		}
+		shas = append(shas, c.Hash)
+	}
+	if len(shas) == 0 {
+		return nil
+	}
+	for _, s := range shas {
+		m.ciPending[s] = true
+	}
+	m.ciBusy = true
+	p := m.ci
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+		defer cancel()
+		res, err := p.Fetch(ctx, shas)
+		return ciMsg{shas: shas, results: res, err: err}
+	}
+}
+
+func ciRefreshTick() tea.Cmd {
+	return tea.Tick(ciRefreshInterval, func(time.Time) tea.Msg { return ciRefreshMsg{} })
+}
 
 type dataMsg struct {
 	seq      int
@@ -49,6 +110,13 @@ type actionDoneMsg struct {
 }
 
 type initMsg struct{}
+type ciInitMsg struct{ p ci.Provider }
+type ciMsg struct {
+	shas    []string
+	results map[string]ci.Result
+	err     error
+}
+type ciRefreshMsg struct{}
 type selectMsg struct{ seq int }
 type toastClearMsg struct{ id int }
 type watchTickMsg struct{}

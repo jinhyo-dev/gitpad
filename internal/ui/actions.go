@@ -7,6 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/jinhyo-dev/gitpad/internal/ci"
 	"github.com/jinhyo-dev/gitpad/internal/git"
 )
 
@@ -241,6 +242,12 @@ func (m *Model) menuForCommit(c *git.Commit) *menu {
 	)
 	if base := remoteWebURL(m.repo); base != "" {
 		items = append(items, menuItem{label: "Open in browser", key: "o", run: func(m *Model) tea.Cmd { return openBrowser(base + "/commit/" + hash) }})
+	}
+	if m.ci != nil {
+		if r, ok := m.ciResults[hash]; ok && r.State != ci.StateNone {
+			p := m.ci
+			items = append(items, menuItem{label: "Open checks in browser", key: "k", run: func(m *Model) tea.Cmd { return openBrowser(p.ChecksURL(hash)) }})
+		}
 	}
 	return &menu{title: short + "  " + trunc(c.Subject, 40), items: items}
 }

@@ -55,7 +55,7 @@ func drain(model tea.Model, msg tea.Msg, depth int) tea.Model {
 
 func isTick(msg tea.Msg) bool {
 	switch msg.(type) {
-	case watchTickMsg, toastClearMsg, spinner.TickMsg:
+	case watchTickMsg, toastClearMsg, ciRefreshMsg, spinner.TickMsg:
 		return true
 	}
 	return false

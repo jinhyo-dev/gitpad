@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 
+	"github.com/jinhyo-dev/gitpad/internal/ci"
 	"github.com/jinhyo-dev/gitpad/internal/git"
 	"github.com/jinhyo-dev/gitpad/internal/graph"
 	"github.com/jinhyo-dev/gitpad/internal/ui/theme"
@@ -219,6 +220,10 @@ func (m *Model) renderCommitRow(c *git.Commit, w int) string {
 		sb.WriteString(author + " ")
 		sb.WriteString(theme.DimSt.Render(fmtDate(c.When)) + " ")
 		rest -= colAuthor + 1 + colDate + 1
+		if m.ci != nil {
+			sb.WriteString(m.ciGlyph(c.Hash) + " ")
+			rest -= 2
+		}
 	}
 	sb.WriteString(m.renderGraphCells(idx, m.graphW) + " ")
 	rest -= m.graphW + 1
@@ -254,6 +259,10 @@ func (m *Model) renderLocalRow(w int) string {
 	if !m.narrowLog(w) {
 		sb.WriteString(pad("", colAuthor+1+colDate+1))
 		rest -= colAuthor + 1 + colDate + 1
+		if m.ci != nil {
+			sb.WriteString("  ")
+			rest -= 2
+		}
 	}
 	col := 0
 	if i, ok := m.hashIdx[m.info.HeadHash]; ok && i < len(m.rows) {
@@ -266,6 +275,30 @@ func (m *Model) renderLocalRow(w int) string {
 	count := theme.MutedSt.Render(" · " + plural(len(m.status), "file", "files"))
 	sb.WriteString(pad(trunc(label+count, rest), rest))
 	return pad(sb.String(), w)
+}
+
+// ciGlyph renders the build status marker for a commit.
+func (m *Model) ciGlyph(hash string) string {
+	r, ok := m.ciResults[hash]
+	if !ok {
+		if m.ciPending[hash] {
+			return theme.DimSt.Render("·")
+		}
+		return " "
+	}
+	return ciStateGlyph(r.State)
+}
+
+func ciStateGlyph(s ci.State) string {
+	switch s {
+	case ci.StateSuccess:
+		return lipgloss.NewStyle().Foreground(theme.Green).Render("✓")
+	case ci.StateFailure:
+		return lipgloss.NewStyle().Foreground(theme.Red).Render("✗")
+	case ci.StatePending:
+		return lipgloss.NewStyle().Foreground(theme.Teal).Render("◌")
+	}
+	return " "
 }
 
 func renderChips(refs []git.Ref, detached bool) string {
@@ -415,6 +448,23 @@ func (m *Model) renderDetails(w, h int) []string {
 		if len(d.Refs) > 0 {
 			lines = append(lines, "")
 			lines = append(lines, renderChips(d.Refs, m.info.Detached))
+		}
+		if r, ok := m.ciResults[d.Hash]; ok && len(r.Checks) > 0 {
+			lines = append(lines, "")
+			summary := map[ci.State]string{ci.StateSuccess: "all checks passed", ci.StateFailure: "checks failed", ci.StatePending: "checks running"}[r.State]
+			lines = append(lines, theme.FrameTitle.Render("Checks")+"  "+ciStateGlyph(r.State)+" "+theme.MutedSt.Render(summary))
+			const maxChecks = 8
+			for i, c := range r.Checks {
+				if i >= maxChecks {
+					lines = append(lines, theme.DimSt.Render(fmt.Sprintf("  … +%d more", len(r.Checks)-maxChecks)))
+					break
+				}
+				line := "  " + ciStateGlyph(c.State) + " " + theme.Base.Render(trunc(c.Name, w-14))
+				if c.Duration != "" {
+					line += theme.DimSt.Render("  " + c.Duration)
+				}
+				lines = append(lines, line)
+			}
 		}
 	} else {
 		lines = append(lines, theme.MutedSt.Render("Select a commit"))

@@ -40,4 +40,6 @@ func TestDumpScreens(t *testing.T) {
 	save("8-commit")
 	h.press("esc", "esc", "P")
 	save("9-push")
+	h.press("esc", "/", "right", "enter")
+	save("10-branch-picker")
 }

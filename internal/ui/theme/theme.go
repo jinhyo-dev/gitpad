@@ -65,7 +65,10 @@ var (
 
 	FilterChip       = lipgloss.NewStyle().Foreground(Muted).Background(Surface2).Padding(0, 1)
 	FilterChipActive = lipgloss.NewStyle().Foreground(OnAccent).Background(Accent).Bold(true).Padding(0, 1)
+	FilterChipFocus  = lipgloss.NewStyle().Foreground(Text).Background(Selection).Bold(true).Padding(0, 1)
 	FilterInput      = lipgloss.NewStyle().Foreground(Text).Background(Surface2).Padding(0, 1)
+
+	QuitKey = lipgloss.NewStyle().Foreground(Red).Bold(true)
 
 	KeyHint    = lipgloss.NewStyle().Foreground(Accent).Bold(true)
 	KeyLabel   = lipgloss.NewStyle().Foreground(Muted)
