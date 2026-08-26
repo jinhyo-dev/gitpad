@@ -1,0 +1,25 @@
+{
+    "version": "0.1.0",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/jinhyo-dev/gitpad/releases/download/v0.1.0/gitpad_0.1.0_windows_amd64.zip",
+            "bin": [
+                "gitpad.exe"
+            ],
+            "hash": "e162ab0f7cebe7f9491bde6f70a278da2d9ebc4e8be528c706d4963e04c9a533"
+        },
+        "arm64": {
+            "url": "https://github.com/jinhyo-dev/gitpad/releases/download/v0.1.0/gitpad_0.1.0_windows_arm64.zip",
+            "bin": [
+                "gitpad.exe"
+            ],
+            "hash": "351b40a68e5f072267e94ecf682099fb0b2c5725507f4ae02770eb0cbef34ee9"
+        }
+    },
+    "homepage": "https://github.com/jinhyo-dev/gitpad",
+    "license": "MIT",
+    "description": "Git log \u0026 branch manager for the terminal",
+    "depends": [
+        "git"
+    ]
+}
