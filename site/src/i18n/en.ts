@@ -1,11 +1,38 @@
 export const en = {
   locale: "en",
   meta: {
-    title: "gitpad — Git log & branch manager for the terminal",
+    title: "gitpad · Git TUI: commit graph, branches & push in the terminal",
     description:
-      "gitpad puts your whole repository on one screen: branch tree, commit graph, changed files and details, with a commit workspace, push dialog and CI status. macOS, Linux, Windows.",
+      "gitpad is an open-source Git TUI: a terminal client with a commit graph, branch tree, diffs, commit workspace, push dialog and GitHub CI status. One binary for macOS, Linux and Windows.",
+    keywords: [
+      "gitpad",
+      "git tui",
+      "git terminal",
+      "github terminal",
+      "terminal git client",
+      "git log graph",
+      "git branch manager",
+      "git cli ui",
+      "terminal ui",
+      "TUI",
+      "git",
+      "github",
+      "lazygit alternative",
+      "macos",
+      "linux",
+      "windows",
+    ],
+    siteName: "gitpad",
+    ogLocale: "en_US",
   },
-  nav: { features: "Features", demo: "Demo", install: "Install", keys: "Keys", github: "GitHub" },
+  nav: {
+    about: "About",
+    features: "Features",
+    demo: "Demo",
+    install: "Install",
+    keys: "Keys",
+    github: "GitHub",
+  },
   hero: {
     eyebrow: "Open source · Go · single binary",
     title: "Your whole Git history,\non one screen.",
@@ -32,6 +59,19 @@ export const en = {
       ["c", "commit"],
       ["P", "push"],
       ["esc", "back"],
+    ],
+  },
+  about: {
+    title: "A Git TUI built around the log",
+    paragraphs: [
+      "gitpad is a terminal user interface (TUI) for Git. Instead of stitching together git log, git branch and git diff, you get the commit graph, the branch tree, the changed files and the commit details on one screen — the way a desktop Git client shows them, inside the terminal you already work in.",
+      "It is a single Go binary that drives your own git, so hooks, credential helpers and signing keys keep working. Repositories hosted on GitHub get check status next to every commit, and a commit workspace and push dialog cover the everyday GitHub workflow without leaving the keyboard.",
+    ],
+    facts: [
+      ["Platforms", "macOS · Linux · Windows"],
+      ["Install", "Homebrew · apt · Scoop · go install"],
+      ["License", "MIT, open source"],
+      ["Language", "Go (bubbletea)"],
     ],
   },
   features: {

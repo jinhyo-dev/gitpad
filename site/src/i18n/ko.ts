@@ -3,11 +3,38 @@ import type { Dict } from "./en";
 export const ko: Dict = {
   locale: "ko",
   meta: {
-    title: "gitpad — 터미널용 Git 로그 & 브랜치 매니저",
+    title: "gitpad · 터미널 Git TUI — 커밋 그래프·브랜치·푸시",
     description:
-      "gitpad는 브랜치 트리, 커밋 그래프, 변경 파일과 상세를 한 화면에 보여주는 터미널 Git 도구입니다. 커밋 워크스페이스, Push 다이얼로그, CI 상태까지. macOS · Linux · Windows.",
+      "gitpad는 오픈소스 Git TUI입니다. 커밋 그래프, 브랜치 트리, 디프, 커밋 워크스페이스, Push 다이얼로그, GitHub CI 상태를 터미널 한 화면에서. macOS · Linux · Windows 단일 바이너리.",
+    keywords: [
+      "gitpad",
+      "git tui",
+      "git 터미널",
+      "github 터미널",
+      "터미널 git 클라이언트",
+      "git 로그 그래프",
+      "git 브랜치 관리",
+      "git cli ui",
+      "terminal ui",
+      "TUI",
+      "git",
+      "github",
+      "lazygit 대안",
+      "macos",
+      "linux",
+      "windows",
+    ],
+    siteName: "gitpad",
+    ogLocale: "ko_KR",
   },
-  nav: { features: "기능", demo: "데모", install: "설치", keys: "단축키", github: "GitHub" },
+  nav: {
+    about: "소개",
+    features: "기능",
+    demo: "데모",
+    install: "설치",
+    keys: "단축키",
+    github: "GitHub",
+  },
   hero: {
     eyebrow: "오픈소스 · Go · 단일 바이너리",
     title: "Git 히스토리 전체를\n한 화면에.",
@@ -34,6 +61,19 @@ export const ko: Dict = {
       ["c", "커밋"],
       ["P", "푸시"],
       ["esc", "뒤로"],
+    ],
+  },
+  about: {
+    title: "로그를 중심으로 만든 Git TUI",
+    paragraphs: [
+      "gitpad는 터미널용 Git 사용자 인터페이스(TUI)입니다. git log, git branch, git diff를 번갈아 치는 대신 커밋 그래프, 브랜치 트리, 변경 파일, 커밋 상세를 한 화면에서 봅니다 — 데스크톱 Git 클라이언트의 화면 구성을, 이미 쓰고 있는 터미널 안에서.",
+      "Go로 만든 단일 바이너리이며 여러분의 git을 그대로 호출하므로 훅, credential helper, 서명 키가 그대로 동작합니다. GitHub에 올라간 저장소는 커밋마다 체크 상태가 표시되고, 커밋 워크스페이스와 Push 다이얼로그가 키보드에서 손을 떼지 않고 GitHub 워크플로를 처리합니다.",
+    ],
+    facts: [
+      ["플랫폼", "macOS · Linux · Windows"],
+      ["설치", "Homebrew · apt · Scoop · go install"],
+      ["라이선스", "MIT, 오픈소스"],
+      ["언어", "Go (bubbletea)"],
     ],
   },
   features: {

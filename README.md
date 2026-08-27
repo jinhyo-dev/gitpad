@@ -2,6 +2,8 @@
 
 A Git log & branch manager for the terminal.
 
+**Website & interactive demo:** [gitpad.jinhyo.dev](https://gitpad.jinhyo.dev/) ([한국어](https://gitpad.jinhyo.dev/ko/))
+
 gitpad puts the whole picture on one screen: a branch tree on the left, a
 colored commit graph in the middle, the changed files and commit details on
 the right — with right-click (or `Enter`) context menus for

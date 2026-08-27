@@ -8,6 +8,7 @@ export function Header() {
   const locale = useLocale();
   const other = locale === "en" ? "ko" : "en";
   const links: [string, string][] = [
+    ["#about", t.nav.about],
     ["#features", t.nav.features],
     ["#demo", t.nav.demo],
     ["#install", t.nav.install],
@@ -23,7 +24,7 @@ export function Header() {
           <Logo size={24} className="rounded-md ring-1 ring-surface2" />
           <span className="rounded-md bg-accent px-2 py-0.5 text-base text-sm">gitpad</span>
         </a>
-        <nav className="hidden items-center gap-5 text-sm text-muted md:flex">
+        <nav aria-label="Primary" className="hidden items-center gap-5 text-sm text-muted md:flex">
           {links.map(([href, label]) => (
             <a key={href} href={href} className="hover:text-text">
               {label}

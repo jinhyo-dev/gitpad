@@ -7,6 +7,7 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
 const BASE = "/";
+const SITE = process.env.VITE_SITE_URL?.replace(/\/?$/, "/");
 const dist = new URL("../dist/", import.meta.url).pathname;
 const template = readFileSync(dist + "index.html", "utf8");
 const { render } = (await import(pathToFileURL(dist + "server/entry-server.js").href)) as {
@@ -16,6 +17,7 @@ const { render } = (await import(pathToFileURL(dist + "server/entry-server.js").
 for (const locale of ["en", "ko"] as const) {
   const { html, head } = render(locale);
   const page = template
+    .replace("<title>gitpad</title>\n    ", "") // replaced by the locale-specific head
     .replace('<html lang="en"', `<html lang="${locale}"`)
     .replace("<!--app-head-->", head)
     .replace("<!--app-html-->", html);
@@ -38,4 +40,30 @@ const redirect = `<!doctype html>
 writeFileSync(dist + "index.html", redirect);
 writeFileSync(dist + "404.html", redirect);
 console.log("wrote index.html + 404.html redirects");
+
+// Crawler hints. The sitemap needs absolute URLs, so it only exists when the
+// deployer provided VITE_SITE_URL.
+let robots = "User-agent: *\nAllow: /\nDisallow: /404.html\n";
+if (SITE) {
+  const now = new Date().toISOString().slice(0, 10);
+  const urls = (["en", "ko"] as const)
+    .map(
+      (l) => `  <url>
+    <loc>${SITE}${l}/</loc>
+    <lastmod>${now}</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="${SITE}en/" />
+    <xhtml:link rel="alternate" hreflang="ko" href="${SITE}ko/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="${SITE}en/" />
+  </url>`,
+    )
+    .join("\n");
+  writeFileSync(
+    dist + "sitemap.xml",
+    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${urls}\n</urlset>\n`,
+  );
+  robots += `Sitemap: ${SITE}sitemap.xml\n`;
+  console.log("wrote sitemap.xml");
+}
+writeFileSync(dist + "robots.txt", robots);
+console.log("wrote robots.txt");
 rmSync(dist + "server", { recursive: true, force: true }); // SSR bundle is only needed here
