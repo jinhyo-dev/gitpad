@@ -424,8 +424,12 @@ func (m *Model) commitDiffKey(key string) tea.Cmd {
 	d := m.diff
 	switch key {
 	case "j", "down":
-		d.scroll = minInt(d.scroll+1, m.diffMaxScroll())
+		m.diffJump(1)
 	case "k", "up":
+		m.diffJump(-1)
+	case "shift+down", "ctrl+e":
+		d.scroll = minInt(d.scroll+1, m.diffMaxScroll())
+	case "shift+up", "ctrl+y":
 		d.scroll = maxInt(d.scroll-1, 0)
 	case "ctrl+d", "pgdown", " ":
 		d.scroll = minInt(d.scroll+h/2, m.diffMaxScroll())

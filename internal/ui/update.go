@@ -87,6 +87,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			mm.diff.loading = false
 			mm.diff.err = msg.err
 			mm.diff.lines, mm.diff.stats = parseDiff(msg.text)
+			mm.diff.blocks = changeBlocks(mm.diff.lines)
+			mm.diff.cur = 0
 			mm.diff.scroll = clamp(mm.diff.scroll, 0, mm.diffMaxScroll())
 		}
 	case actionDoneMsg:
@@ -705,8 +707,12 @@ func (m *Model) diffKey(key string) (tea.Cmd, bool) {
 	h := m.rects[PanelLog].h
 	switch key {
 	case "j", "down":
-		d.scroll = minInt(d.scroll+1, m.diffMaxScroll())
+		m.diffJump(1)
 	case "k", "up":
+		m.diffJump(-1)
+	case "shift+down", "ctrl+e":
+		d.scroll = minInt(d.scroll+1, m.diffMaxScroll())
+	case "shift+up", "ctrl+y":
 		d.scroll = maxInt(d.scroll-1, 0)
 	case "ctrl+d", "pgdown", " ":
 		d.scroll = minInt(d.scroll+h/2, m.diffMaxScroll())

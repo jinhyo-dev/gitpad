@@ -89,6 +89,7 @@ The search box matches commit messages **and** author names; **branch** and
 | `←` `→` | fold / unfold; on a leaf (or nothing left to fold) move to the previous / next pane |
 | `/` | search message, author or hash · `A` all branches ↔ current · `esc` clear |
 | `↑` / `↓` | past the top of a pane → search bar · past the last file → Details pane |
+| `↑` / `↓` in a diff | jump to the next / previous change block · `shift+↑↓` scroll by line · `n` / `p` next / prev file |
 | `←` / `→` in the filter bar | move between the search box and the **Branch** chip; `enter` on the chip opens a type-to-filter branch picker, `esc` clears the branch filter |
 | `c` / `C` | checkout (branches) · commit workspace (elsewhere / anywhere) |
 | `space` / `a` | check a file / all files for commit (local changes) |
@@ -131,7 +132,8 @@ previews the diff of the highlighted file.
 
 - `enter` (or `space`) checks a file — or a whole folder / group — and `a`
   checks everything. `tab`, `1 2 3` or `→` move between the file list, the
-  message and the diff preview, which scrolls with the arrow keys.
+  message and the diff preview; there `↑`/`↓` jump between change blocks
+  (`shift+↑`/`↓` scroll by line).
   Tracked changes are checked by default, unversioned files are not.
 - Checkboxes are gitpad's own selection: the index is not touched until you
   commit, and then only the checked files are committed

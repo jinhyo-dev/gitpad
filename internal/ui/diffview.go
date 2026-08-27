@@ -27,6 +27,50 @@ type diffState struct {
 	loading bool
 	err     error
 	stats   [2]int
+	// blocks are runs of consecutive added/removed lines; ↑/↓ jump between
+	// them and the current one is marked in the gutter.
+	blocks [][2]int // [start, end) line indices
+	cur    int
+}
+
+// changeBlocks finds runs of +/- lines.
+func changeBlocks(lines []diffLine) [][2]int {
+	var blocks [][2]int
+	start := -1
+	for i, l := range lines {
+		changed := l.kind == '+' || l.kind == '-'
+		switch {
+		case changed && start < 0:
+			start = i
+		case !changed && start >= 0:
+			blocks = append(blocks, [2]int{start, i})
+			start = -1
+		}
+	}
+	if start >= 0 {
+		blocks = append(blocks, [2]int{start, len(lines)})
+	}
+	return blocks
+}
+
+// diffJump moves to the next (+1) or previous (-1) change block and scrolls
+// so it sits two lines below the top of the viewport.
+func (m *Model) diffJump(dir int) {
+	d := m.diff
+	if d == nil || len(d.blocks) == 0 {
+		return
+	}
+	d.cur = clamp(d.cur+dir, 0, len(d.blocks)-1)
+	d.scroll = clamp(d.blocks[d.cur][0]-2, 0, m.diffMaxScroll())
+}
+
+// inCurrentBlock reports whether line i belongs to the highlighted block.
+func (d *diffState) inCurrentBlock(i int) bool {
+	if len(d.blocks) == 0 || d.cur >= len(d.blocks) {
+		return false
+	}
+	b := d.blocks[d.cur]
+	return i >= b[0] && i < b[1]
 }
 
 func parseDiff(text string) ([]diffLine, [2]int) {
@@ -100,8 +144,10 @@ func (m *Model) renderDiff(w, h int) []string {
 		return out
 	}
 	gutter := 5
+	w-- // one column for the current-block marker
 	end := minInt(len(d.lines), d.scroll+h)
-	for _, l := range d.lines[d.scroll:end] {
+	for i := d.scroll; i < end; i++ {
+		l := d.lines[i]
 		text := strings.ReplaceAll(l.text, "\t", "    ")
 		var line string
 		switch l.kind {
@@ -121,7 +167,11 @@ func (m *Model) renderDiff(w, h int) []string {
 			g := theme.DiffGutter.Render(padLeft(strconv.Itoa(l.oldNo), gutter) + padLeft(strconv.Itoa(l.newNo), gutter))
 			line = pad(g+theme.Base.Render("  "+trunc(text, w-gutter*2-2)), w)
 		}
-		out = append(out, line)
+		marker := " "
+		if d.inCurrentBlock(i) {
+			marker = theme.AccentB.Render("▎")
+		}
+		out = append(out, marker+line)
 	}
 	return out
 }
@@ -133,7 +183,11 @@ func (m *Model) diffTitle() string {
 	}
 	stats := lipgloss.NewStyle().Foreground(theme.Green).Render(fmt.Sprintf("+%d", d.stats[0])) + " " +
 		lipgloss.NewStyle().Foreground(theme.Red).Render(fmt.Sprintf("-%d", d.stats[1]))
-	return "Diff · " + d.path + "  " + stats
+	pos := ""
+	if len(d.blocks) > 0 {
+		pos = theme.DimSt.Render(fmt.Sprintf("  change %d/%d", d.cur+1, len(d.blocks)))
+	}
+	return "Diff · " + d.path + "  " + stats + pos
 }
 
 // diffMaxScroll bounds scrolling.

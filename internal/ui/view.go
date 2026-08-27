@@ -282,7 +282,7 @@ func (m *Model) renderStatusBar() string {
 	case m.searching:
 		hints = keyHints("enter", "apply", "esc", "cancel")
 	case m.diff != nil:
-		hints = keyHints("j/k", "scroll", "n/p", "next/prev file", "esc", "back")
+		hints = keyHints("↑↓", "next/prev change", "shift+↑↓", "line", "space", "page", "n/p", "next/prev file", "esc", "back")
 	case m.console:
 		hints = keyHints("j/k", "scroll", "`", "back to log")
 	case m.focus == PanelBranches:
@@ -304,7 +304,7 @@ func (m *Model) renderStatusBar() string {
 	case m.commitOpen && m.commit != nil && m.commit.focus == cfMessage:
 		hints = keyHints(keyLabel("ctrl+s"), "commit", keyLabel("ctrl+p"), "commit & push", "↑", "history", "tab", "buttons", "esc", "files")
 	case m.commitOpen && m.commit != nil && m.commit.focus == cfDiff:
-		hints = keyHints("↑↓", "scroll", "n/p", "next/prev file", "←/esc", "files", "1 2 3", "files/message/diff")
+		hints = keyHints("↑↓", "next/prev change", "shift+↑↓", "line", "n/p", "next/prev file", "←/esc", "files", "1 2 3", "pane")
 	case m.commitOpen:
 		hints = keyHints("enter", "check", "a", "check all", "tab", "message", "→", "diff", "1 2 3", "pane", "d", "discard", keyLabel("ctrl+s"), "commit", "esc", "back")
 	}
@@ -330,7 +330,7 @@ func (m *Model) renderHelp() string {
 		{"Navigation", []row{{"tab / 1 2 3 / h l", "switch panel"}, {"j k ↑ ↓", "move"}, {"g / G", "top / bottom"}, {keyLabel("ctrl+d") + " / " + keyLabel("ctrl+u"), "half page"}, {"space", "fold / unfold tree"}, {"← →", "fold / unfold, then previous / next pane"}, {"mouse", "click · right-click · wheel"}}},
 		{"Log", []row{{"enter / m / right-click", "commit actions"}, {"✓ ✗ ◌", "CI status (GitHub, via gh token)"}, {"/", "search message, author or hash"}, {"↑ at top", "jump to the search bar"}, {"→ / enter (filter bar)", "branch picker · esc clears"}, {"A", "all branches ↔ current"}, {"y", "copy hash"}, {"esc", "clear filters"}}},
 		{"Branches", []row{{"enter / m", "branch actions"}, {"c", "checkout"}, {"s", "show branch in log"}, {"d", "delete"}, {"f / p / P", "fetch / pull / push"}}},
-		{"Changes", []row{{"enter", "open diff"}, {"n / p", "next / prev file (in diff)"}, {"space / a", "check file / all (local)"}, {"c / C", "commit workspace"}, {"d", "discard (local)"}, {"H", "file history in log"}}},
+		{"Changes", []row{{"enter", "open diff"}, {"↑ ↓ (in diff)", "next / previous change block"}, {"shift+↑ ↓", "scroll one line"}, {"n / p", "next / prev file (in diff)"}, {"space / a", "check file / all (local)"}, {"c / C", "commit workspace"}, {"d", "discard (local)"}, {"H", "file history in log"}}},
 		{"Commit & Push", []row{{keyLabel("ctrl+s"), "commit selected files"}, {keyLabel("ctrl+p"), "commit & push"}, {"↑ (in message)", "previous messages"}, {"P", "push dialog"}, {"p", "pull (merge / rebase / fetch)"}}},
 		{"Other", []row{{"`", "console (git commands)"}, {"r", "refresh"}, {"?", "this help"}, {"q", "quit"}}},
 	}
