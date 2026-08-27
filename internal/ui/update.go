@@ -984,7 +984,7 @@ func (m *Model) openBranchPicker() {
 
 // branchChipPos returns the x position and width of the Branch chip.
 func (m *Model) branchChipPos() (int, int) {
-	pos := 1
+	pos := 1 + width(logoFilterPrefix())
 	searchW := width(theme.FilterChip.Render("⌕ " + trunc(orDefault(m.logOpts.Grep, searchPlaceholder), 36)))
 	if m.searching {
 		searchW = width(theme.FilterInput.Render("⌕ " + m.search.View()))
@@ -1240,7 +1240,7 @@ func (m *Model) headerClick(x int) tea.Cmd {
 
 func (m *Model) filterClick(x int) tea.Cmd {
 	// Reconstruct chip extents in the same order as renderFilterBar.
-	pos := 1
+	pos := 1 + width(logoFilterPrefix())
 	searchW := width(theme.FilterChip.Render("⌕ " + trunc(orDefault(m.logOpts.Grep, searchPlaceholder), 36)))
 	if x >= pos && x < pos+searchW {
 		return m.startSearch()

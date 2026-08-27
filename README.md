@@ -78,6 +78,11 @@ as on the command line.
 The search box matches commit messages **and** author names; **branch** and
 **path** filters sit next to it. Typing a hash prefix jumps straight to that commit.
 
+The header shows the gitpad logo as an inline image in terminals that support
+the iTerm2 or Kitty graphics protocols (iTerm2, WezTerm, Kitty, Ghostty,
+Warp) and a text mark elsewhere. `GITPAD_LOGO=text|off|iterm|kitty` overrides
+the detection.
+
 ## Keys
 
 | Key | Action |

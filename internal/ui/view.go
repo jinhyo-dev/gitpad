@@ -120,7 +120,7 @@ func (m *Model) renderToast() string {
 }
 
 func (m *Model) renderHeader() string {
-	left := theme.Logo.Render("gitpad") + " " + theme.Bold.Render(m.info.Name) + theme.DimSt.Render("  on  ")
+	left := logoMark() + " " + theme.Logo.Render("gitpad") + " " + theme.Bold.Render(m.info.Name) + theme.DimSt.Render("  on  ")
 	branch := lipgloss.NewStyle().Foreground(theme.Accent).Bold(true).Render(m.info.Head)
 	if m.info.Detached {
 		branch = lipgloss.NewStyle().Foreground(theme.Orange).Bold(true).Render("detached @ " + m.info.Head)
@@ -142,7 +142,8 @@ func (m *Model) renderHeader() string {
 		tabLog = theme.TabActive
 	}
 	right := tabLog.Render("Log") + tabCon.Render("Console") + "  " + theme.KeyHint.Render("?") + theme.KeyLabel.Render(" help ")
-	return highlight(joinRow(" "+left, right, m.width), theme.Surface)
+	// Image logos occupy cells the width calculation cannot see.
+	return highlight(joinRow(" "+left, right, m.width-logoHidden()), theme.Surface)
 }
 
 func (m *Model) hasFilter() bool {
@@ -151,7 +152,7 @@ func (m *Model) hasFilter() bool {
 
 func (m *Model) renderFilterBar() string {
 	var sb strings.Builder
-	sb.WriteString(" ")
+	sb.WriteString(" " + logoFilterPrefix())
 	if m.searching {
 		sb.WriteString(theme.FilterInput.Render("⌕ " + m.search.View()))
 	} else {
