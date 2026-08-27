@@ -301,9 +301,9 @@ func (m *Model) renderStatusBar() string {
 	case m.push != nil:
 		hints = keyHints("enter", "push", "f", "force with lease", "t", "tags", "esc", "cancel")
 	case m.commitOpen && m.commit != nil && m.commit.focus == cfMessage:
-		hints = keyHints("ctrl+s", "commit", "ctrl+p", "commit & push", "↑", "history", "tab", "buttons", "esc", "files")
+		hints = keyHints(keyLabel("ctrl+s"), "commit", keyLabel("ctrl+p"), "commit & push", "↑", "history", "tab", "buttons", "esc", "files")
 	case m.commitOpen:
-		hints = keyHints("space", "check", "a", "check all", "enter/tab", "message", "d", "discard", "ctrl+s", "commit", "esc", "back")
+		hints = keyHints("space", "check", "a", "check all", "enter/tab", "message", "d", "discard", keyLabel("ctrl+s"), "commit", "esc", "back")
 	}
 	if m.menu == nil && m.dialog == nil && m.push == nil {
 		hints += theme.DimSt.Render("  ") + theme.QuitKey.Render("q") + " " + theme.KeyLabel.Render("exit")
@@ -324,11 +324,11 @@ func (m *Model) renderHelp() string {
 		rows  []row
 	}
 	sections := []section{
-		{"Navigation", []row{{"tab / 1 2 3 / h l", "switch panel"}, {"j k ↑ ↓", "move"}, {"g / G", "top / bottom"}, {"ctrl+d / ctrl+u", "half page"}, {"space", "fold / unfold tree"}, {"← →", "fold / unfold, then previous / next pane"}, {"mouse", "click · right-click · wheel"}}},
+		{"Navigation", []row{{"tab / 1 2 3 / h l", "switch panel"}, {"j k ↑ ↓", "move"}, {"g / G", "top / bottom"}, {keyLabel("ctrl+d") + " / " + keyLabel("ctrl+u"), "half page"}, {"space", "fold / unfold tree"}, {"← →", "fold / unfold, then previous / next pane"}, {"mouse", "click · right-click · wheel"}}},
 		{"Log", []row{{"enter / m / right-click", "commit actions"}, {"✓ ✗ ◌", "CI status (GitHub, via gh token)"}, {"/", "search message, author or hash"}, {"↑ at top", "jump to the search bar"}, {"→ / enter (filter bar)", "branch picker · esc clears"}, {"A", "all branches ↔ current"}, {"y", "copy hash"}, {"esc", "clear filters"}}},
 		{"Branches", []row{{"enter / m", "branch actions"}, {"c", "checkout"}, {"s", "show branch in log"}, {"d", "delete"}, {"f / p / P", "fetch / pull / push"}}},
 		{"Changes", []row{{"enter", "open diff"}, {"n / p", "next / prev file (in diff)"}, {"space / a", "check file / all (local)"}, {"c / C", "commit workspace"}, {"d", "discard (local)"}, {"H", "file history in log"}}},
-		{"Commit & Push", []row{{"ctrl+s", "commit selected files"}, {"ctrl+p", "commit & push"}, {"↑ (in message)", "previous messages"}, {"P", "push dialog"}, {"p", "pull (merge / rebase / fetch)"}}},
+		{"Commit & Push", []row{{keyLabel("ctrl+s"), "commit selected files"}, {keyLabel("ctrl+p"), "commit & push"}, {"↑ (in message)", "previous messages"}, {"P", "push dialog"}, {"p", "pull (merge / rebase / fetch)"}}},
 		{"Other", []row{{"`", "console (git commands)"}, {"r", "refresh"}, {"?", "this help"}, {"q", "quit"}}},
 	}
 	renderSection := func(s section) []string {

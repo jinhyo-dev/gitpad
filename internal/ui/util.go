@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 	"time"
 
@@ -165,6 +166,16 @@ func keyHints(pairs ...string) string {
 		parts = append(parts, theme.KeyHint.Render(pairs[i])+" "+theme.KeyLabel.Render(pairs[i+1]))
 	}
 	return strings.Join(parts, theme.DimSt.Render("  "))
+}
+
+// keyLabel renders a ctrl-combo the way the host platform writes it: ⌃S on
+// macOS, ctrl+s elsewhere. (Terminals cannot deliver ⌘ combos to programs,
+// so the key itself is Control everywhere.)
+func keyLabel(k string) string {
+	if runtime.GOOS != "darwin" || !strings.HasPrefix(k, "ctrl+") {
+		return k
+	}
+	return "⌃" + strings.ToUpper(strings.TrimPrefix(k, "ctrl+"))
 }
 
 func plural(n int, one, many string) string {

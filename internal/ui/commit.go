@@ -283,7 +283,7 @@ func (m *Model) renderCommit(w, h int) []string {
 	}
 	btns := " " + commitBtn.Render("Commit") + "  " + pushBtn.Render("Commit & Push")
 	count := theme.MutedSt.Render(fmt.Sprintf("%d/%d files ", sel, len(m.status)))
-	hint := theme.KeyHint.Render("ctrl+s") + theme.KeyLabel.Render(" commit  ") + theme.KeyHint.Render("ctrl+p") + theme.KeyLabel.Render(" & push  ")
+	hint := theme.KeyHint.Render(keyLabel("ctrl+s")) + theme.KeyLabel.Render(" commit  ") + theme.KeyHint.Render(keyLabel("ctrl+p")) + theme.KeyLabel.Render(" & push  ")
 	info := hint + count
 	if width(btns)+width(info) > w { // buttons always win
 		info = count
