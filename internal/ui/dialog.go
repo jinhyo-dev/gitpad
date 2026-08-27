@@ -24,8 +24,15 @@ type dialog struct {
 	body   string
 	ok     string
 	danger bool
+	quit   bool // the quit confirmation: a second `q` confirms
 	input  textinput.Model
 	onOK   func(m *Model, value string) tea.Cmd
+}
+
+// confirmQuit asks before leaving; `q` again, `y` or Enter exits.
+func (m *Model) confirmQuit() {
+	m.dialog = &dialog{kind: dlgConfirm, title: "Quit gitpad?", body: "Press q again or Enter to exit, Esc to stay.", ok: "Quit", quit: true,
+		onOK: func(m *Model, _ string) tea.Cmd { return tea.Quit }}
 }
 
 func (m *Model) confirm(title, body, ok string, danger bool, onOK func(m *Model) tea.Cmd) {
@@ -70,6 +77,9 @@ func (d *dialog) render() string {
 		okBtn = theme.ButtonDanger
 	}
 	hint := theme.DimSt.Render("enter ↵ · esc")
+	if d.quit {
+		hint = theme.DimSt.Render("q / enter · esc")
+	}
 	buttons := okBtn.Render(d.ok) + " " + theme.ButtonPlain.Render("Cancel")
 	gap := w - width(buttons) - width(hint)
 	if gap < 1 {

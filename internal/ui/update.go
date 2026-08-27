@@ -303,7 +303,8 @@ func (m *Model) handleKey(k tea.KeyMsg) tea.Cmd {
 			m.console = false
 			return nil
 		}
-		return tea.Quit
+		m.confirmQuit()
+		return nil
 	case "?":
 		m.help = true
 		return nil
@@ -824,6 +825,11 @@ func (m *Model) dialogKey(k tea.KeyMsg) tea.Cmd {
 		case "y", "Y":
 			m.dialog = nil
 			return d.onOK(m, "")
+		case "q":
+			if d.quit {
+				m.dialog = nil
+				return d.onOK(m, "")
+			}
 		case "n", "N":
 			m.dialog = nil
 		}

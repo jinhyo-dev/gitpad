@@ -433,6 +433,31 @@ func TestWalkthrough(t *testing.T) {
 	h.press("j", "k", "tab", "tab", "j")
 }
 
+func TestQuitConfirmation(t *testing.T) {
+	dir := makeRepo(t)
+	h := newHarness(t, dir, 120, 30)
+	h.press("q")
+	m := h.m()
+	if m.dialog == nil || !m.dialog.quit {
+		t.Fatal("q should ask for confirmation")
+	}
+	if !strings.Contains(ansi.Strip(h.model.View()), "Quit gitpad?") {
+		t.Fatal("confirmation should be visible")
+	}
+	h.press("esc")
+	if h.m().dialog != nil {
+		t.Fatal("esc should keep the app open")
+	}
+	h.press("q")
+	_, cmd := h.model.Update(keyMsg("q"))
+	if cmd == nil {
+		t.Fatal("second q should quit")
+	}
+	if _, ok := cmd().(tea.QuitMsg); !ok {
+		t.Fatal("second q should produce tea.Quit")
+	}
+}
+
 func TestNotARepo(t *testing.T) {
 	m := New(t.TempDir())
 	if m.fatal == nil {
