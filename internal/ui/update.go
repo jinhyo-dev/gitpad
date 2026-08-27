@@ -91,6 +91,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case actionDoneMsg:
 		mm.loading--
+		if mm.actions--; mm.actions <= 0 {
+			mm.actions, mm.actionLabel = 0, ""
+		}
 		if mm.push != nil {
 			mm.push.busy = false
 		}
@@ -102,7 +105,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, tea.Batch(cmd, mm.loadAll(msg.keepHash))
 		}
-		cmd = tea.Batch(mm.showToast(msg.label+" ✓", 1), mm.loadAll(msg.keepHash))
+		cmd = tea.Batch(mm.showToast(msg.label, 1), mm.loadAll(msg.keepHash))
 		if msg.then != nil {
 			cmd = tea.Batch(cmd, msg.then(mm))
 		}

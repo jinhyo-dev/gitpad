@@ -72,10 +72,12 @@ var (
 
 	KeyHint    = lipgloss.NewStyle().Foreground(Accent).Bold(true)
 	KeyLabel   = lipgloss.NewStyle().Foreground(Muted)
-	ToastOK    = lipgloss.NewStyle().Foreground(OnAccent).Background(Green).Bold(true).Padding(0, 1)
-	ToastErr   = lipgloss.NewStyle().Foreground(OnAccent).Background(Red).Bold(true).Padding(0, 1)
-	ToastInfo  = lipgloss.NewStyle().Foreground(OnAccent).Background(Accent).Bold(true).Padding(0, 1)
+	ToastOK    = lipgloss.NewStyle().Foreground(OnAccent).Background(Green).Bold(true).Padding(0, 3)
+	ToastErr   = lipgloss.NewStyle().Foreground(OnAccent).Background(Red).Bold(true).Padding(0, 3)
+	ToastInfo  = lipgloss.NewStyle().Foreground(OnAccent).Background(Accent).Bold(true).Padding(0, 3)
 	StateBadge = lipgloss.NewStyle().Foreground(OnAccent).Background(Orange).Bold(true).Padding(0, 1)
+
+	ProgressBox = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(Accent).Background(Surface).Padding(1, 3)
 
 	MenuBox      = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(Accent).Background(Surface).Padding(0, 1)
 	MenuTitle    = lipgloss.NewStyle().Foreground(Muted).Bold(true)

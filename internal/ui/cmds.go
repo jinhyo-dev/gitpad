@@ -250,6 +250,8 @@ func (m *Model) actionThen(label string, fn func() error, then func(m *Model) te
 
 func (m *Model) actionFull(label string, fn func() error, onErr func(m *Model, err error) tea.Cmd, then func(m *Model) tea.Cmd) tea.Cmd {
 	m.loading++
+	m.actions++
+	m.actionLabel = label
 	keep := ""
 	if c := m.selectedCommit(); c != nil {
 		keep = c.Hash

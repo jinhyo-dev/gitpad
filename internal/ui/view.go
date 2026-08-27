@@ -86,7 +86,37 @@ func (m Model) View() string {
 	if mm.dialog != nil {
 		base = overlay.Center(base, mm.dialog.render(), m.width, m.height)
 	}
+	if mm.actions > 0 {
+		base = overlay.Center(base, mm.renderProgress(), m.width, m.height)
+	}
+	if mm.toast != nil {
+		pill := mm.renderToast()
+		base = overlay.Compose(base, pill, (m.width-width(pill))/2, rowPanels)
+	}
 	return base
+}
+
+// renderProgress is the centered "working" box shown during git operations.
+func (m *Model) renderProgress() string {
+	label := m.actionLabel
+	if label == "" {
+		label = "Working"
+	}
+	body := m.spin.View() + " " + theme.Bold.Render(label+"…")
+	return theme.ProgressBox.Render(pad(body, maxInt(28, width(body))))
+}
+
+// renderToast is the top-center notification banner.
+func (m *Model) renderToast() string {
+	t := m.toast
+	icon, st := "ℹ", theme.ToastInfo
+	switch t.kind {
+	case 1:
+		icon, st = "✓", theme.ToastOK
+	case 2:
+		icon, st = "✗", theme.ToastErr
+	}
+	return st.Render(icon + "  " + trunc(t.text, maxInt(20, m.width-12)))
 }
 
 func (m *Model) renderHeader() string {
@@ -279,17 +309,8 @@ func (m *Model) renderStatusBar() string {
 		hints += theme.DimSt.Render("  ") + theme.QuitKey.Render("q") + " " + theme.KeyLabel.Render("exit")
 	}
 	right := ""
-	if m.toast != nil {
-		st := theme.ToastInfo
-		switch m.toast.kind {
-		case 1:
-			st = theme.ToastOK
-		case 2:
-			st = theme.ToastErr
-		}
-		right = st.Render(trunc(m.toast.text, m.width/2))
-	} else if m.loading > 0 {
-		right = m.spin.View() + theme.MutedSt.Render(" working…")
+	if m.loading > 0 {
+		right = m.spin.View() + theme.MutedSt.Render(" loading…")
 	} else {
 		right = theme.DimSt.Render(fmt.Sprintf("%d/%d", minInt(m.lcur+1, m.logLen()), m.logLen()))
 	}

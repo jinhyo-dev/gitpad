@@ -119,12 +119,16 @@ type Model struct {
 	spinning bool // a spinner tick chain is alive
 	selSeq   int  // debounce token for selection loads
 	loading  int
-	toast    *toast
-	toastID  int
-	seq      int
-	dataSeq  int
-	filesSeq int
-	diffSeq  int
+	// user-triggered git operations in flight (fetch, push, commit…), shown
+	// as a centered progress box; background loads only spin the status bar
+	actions     int
+	actionLabel string
+	toast       *toast
+	toastID     int
+	seq         int
+	dataSeq     int
+	filesSeq    int
+	diffSeq     int
 
 	rects        [panelCount]rect
 	detailsRect  rect
