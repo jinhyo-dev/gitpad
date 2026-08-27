@@ -1,19 +1,19 @@
 {
-    "version": "0.2.0",
+    "version": "0.3.0",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/jinhyo-dev/gitpad/releases/download/v0.2.0/gitpad_0.2.0_windows_amd64.zip",
+            "url": "https://github.com/jinhyo-dev/gitpad/releases/download/v0.3.0/gitpad_0.3.0_windows_amd64.zip",
             "bin": [
                 "gitpad.exe"
             ],
-            "hash": "2b083b1bf389186621453c5dd0c5524c41f43bce2edd480b586d36bd9a1c7435"
+            "hash": "fa86ab9e6cc142565ddf896f2dec25eaf8f4a1ab5869889c894a2a44608b480f"
         },
         "arm64": {
-            "url": "https://github.com/jinhyo-dev/gitpad/releases/download/v0.2.0/gitpad_0.2.0_windows_arm64.zip",
+            "url": "https://github.com/jinhyo-dev/gitpad/releases/download/v0.3.0/gitpad_0.3.0_windows_arm64.zip",
             "bin": [
                 "gitpad.exe"
             ],
-            "hash": "94945daa51d3790910f63e109aaf41c7081887c0c55090a22bcd1e26b1a594d0"
+            "hash": "e47c0464489178a4123055040e447436c88e74d9d024e27bcac3b4c3c0ff7063"
         }
     },
     "homepage": "https://github.com/jinhyo-dev/gitpad",
