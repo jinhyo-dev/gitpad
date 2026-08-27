@@ -201,6 +201,7 @@ internal/graph          commit-graph lane layout (one row per commit)
 internal/ui             bubbletea model: panels, menus, dialogs, diff viewer
 internal/ui/theme       palette & styles (Catppuccin-inspired, light fallbacks)
 internal/ui/overlay     ANSI-aware compositing for popups (CJK-width safe)
+site/                   website (Vite+ · React · Tailwind, EN/KO, interactive demo)
 scripts/demo-repo       generator for the anonymous demo repository (screenshots)
 scripts/apt-*.sh        apt repository signing key + index builder (release workflow)
 docs/demo.tape          vhs script that records the README media

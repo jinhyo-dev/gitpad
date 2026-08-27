@@ -1,0 +1,38 @@
+{
+  "name": "site",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vp dev",
+    "build": "vp build && vp build --ssr src/entry-server.tsx --outDir dist/server && bun scripts/prerender.ts",
+    "preview": "vp preview",
+    "check": "vp check",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.4.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "@vitejs/plugin-react": "^6.1.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~6.0.2",
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.3.0",
+    "vite-plus": "0.3.0"
+  },
+  "overrides": {
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.3.0"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "bun",
+      "version": "1.4.0",
+      "onFail": "download"
+    }
+  }
+}

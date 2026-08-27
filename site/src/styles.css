@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+/* gitpad palette (Catppuccin Mocha) exposed as Tailwind theme tokens */
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --color-base: #11111b;
+  --color-mantle: #181825;
+  --color-surface: #1e1e2e;
+  --color-surface2: #313244;
+  --color-overlay: #45475a;
+  --color-text: #cdd6f4;
+  --color-muted: #9399b2;
+  --color-dim: #585b70;
+  --color-accent: #89b4fa;
+  --color-green: #a6e3a1;
+  --color-red: #f38ba8;
+  --color-yellow: #f9e2af;
+  --color-magenta: #cba6f7;
+  --color-cyan: #94e2d5;
+  --color-orange: #fab387;
+  --color-pink: #f5c2e7;
+  --color-teal: #89dceb;
+  --color-selection: #2c3e6e;
+
+  --shadow-glow: 0 0 0 1px rgb(137 180 250 / 0.25), 0 30px 80px -20px rgb(137 180 250 / 0.35);
+}
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: dark;
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgb(137 180 250 / 0.12), transparent 60%),
+    radial-gradient(800px 400px at 100% 20%, rgb(203 166 247 / 0.08), transparent 60%),
+    var(--color-base);
+}
+
+::selection {
+  background: var(--color-selection);
+}
+
+/* Terminal demo: every line has the same height so the layout is a grid */
+.tui {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 20px;
+  font-variant-ligatures: none;
+}
+.tui-line {
+  height: 20px;
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.kbd {
+  font-family: var(--font-mono);
+  font-size: 0.8em;
+  padding: 0.1em 0.45em;
+  border-radius: 0.375rem;
+  background: var(--color-surface2);
+  color: var(--color-text);
+  border: 1px solid var(--color-overlay);
+  box-shadow: inset 0 -1px 0 var(--color-overlay);
+}
