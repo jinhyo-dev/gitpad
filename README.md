@@ -98,6 +98,7 @@ The search box matches commit messages **and** author names; **branch** and
 | `H` | show the file's history in the log |
 | `y` | copy hash / path / name |
 | `f` `p` `P` | fetch · pull chooser · push dialog |
+| `V` | new version tag (patch / minor / major) + push |
 | `ctrl+s` `ctrl+p` | commit · commit & push (in the commit workspace) |
 | `` ` `` | console: every git command gitpad ran, with output |
 | `r` | refresh (the view also auto-refreshes when the repository changes) |
@@ -147,6 +148,15 @@ previews the diff of the highlighted file.
 Shows the target (`main → origin/main`, or the upstream that will be
 created), the list of commits that will be sent, a warning when the branch
 is behind its upstream, and *Force with lease* / *Push tags* toggles.
+
+### Tags & releases (`V`)
+
+`V` proposes the next **patch / minor / major** version based on your latest
+`vX.Y.Z` tag, asks for an optional annotation (annotated tag when given,
+lightweight otherwise), creates the tag on HEAD and offers to push it right
+away — which is all a tag-driven release pipeline needs. Tags in the Branches
+pane have *Push tag* / *Delete tag on origin* actions, and any commit's menu
+has *New tag here…*.
 
 ### Pull (`p`)
 

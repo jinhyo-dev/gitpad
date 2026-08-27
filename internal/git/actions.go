@@ -61,9 +61,31 @@ func (r *Runner) DeleteRemoteBranch(remote, name string) error {
 	return err
 }
 func (r *Runner) CreateTag(name, at string) error { _, err := r.RunWrite("tag", name, at); return err }
-func (r *Runner) DeleteTag(name string) error     { _, err := r.RunWrite("tag", "-d", name); return err }
-func (r *Runner) Fetch() error                    { _, err := r.RunWrite("fetch", "--all", "--prune"); return err }
-func (r *Runner) Pull() error                     { _, err := r.RunWrite("pull"); return err }
+
+// CreateTagAnnotated makes an annotated tag (git tag -a) with a message; an
+// empty message falls back to a lightweight tag.
+func (r *Runner) CreateTagAnnotated(name, at, message string) error {
+	if strings.TrimSpace(message) == "" {
+		return r.CreateTag(name, at)
+	}
+	_, err := r.RunWrite("tag", "-a", name, "-m", message, at)
+	return err
+}
+
+// PushTag pushes a single tag.
+func (r *Runner) PushTag(remote, name string) error {
+	_, err := r.RunWrite("push", remote, "refs/tags/"+name)
+	return err
+}
+
+// DeleteRemoteTag removes a tag from a remote.
+func (r *Runner) DeleteRemoteTag(remote, name string) error {
+	_, err := r.RunWrite("push", remote, "--delete", "refs/tags/"+name)
+	return err
+}
+func (r *Runner) DeleteTag(name string) error { _, err := r.RunWrite("tag", "-d", name); return err }
+func (r *Runner) Fetch() error                { _, err := r.RunWrite("fetch", "--all", "--prune"); return err }
+func (r *Runner) Pull() error                 { _, err := r.RunWrite("pull"); return err }
 func (r *Runner) Push(force bool) error {
 	args := []string{"push"}
 	if force {

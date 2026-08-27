@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -142,9 +143,153 @@ func (m *Model) newBranchPrompt(at, atLabel string, checkout bool) tea.Cmd {
 }
 
 func (m *Model) newTagPrompt(at, atLabel string) tea.Cmd {
-	return m.prompt("New tag", "Tag "+atLabel+".", "tag name", "", func(m *Model, name string) tea.Cmd {
-		return m.action("Tag "+name, func() error { return m.repo.CreateTag(name, at) })
+	return m.prompt("New tag", "Tag "+atLabel+".", "tag name (e.g. v1.2.0)", "", func(m *Model, name string) tea.Cmd {
+		return m.tagMessagePrompt(name, at, false)
 	})
+}
+
+// tagMessagePrompt asks for an optional annotation, creates the tag and
+// then offers to push it.
+func (m *Model) tagMessagePrompt(name, at string, offerPush bool) tea.Cmd {
+	return m.promptOptional("Tag "+name, "Message for an annotated tag — leave empty for a lightweight tag.", "release notes / message", func(m *Model, msg string) tea.Cmd {
+		return m.actionThen("Tag "+name, func() error { return m.repo.CreateTagAnnotated(name, at, msg) }, func(m *Model) tea.Cmd {
+			if !offerPush {
+				return nil
+			}
+			remote := m.defaultRemote()
+			if remote == "" {
+				return nil
+			}
+			m.confirm("Push "+name+" to "+remote+"?", "Pushing the tag triggers release workflows that watch for tags.", "Push tag", false, func(m *Model) tea.Cmd {
+				return m.action("Push "+name, func() error { return m.repo.PushTag(remote, name) })
+			})
+			return nil
+		})
+	})
+}
+
+func (m *Model) defaultRemote() string {
+	remotes := m.repo.Remotes()
+	for _, r := range remotes {
+		if r == "origin" {
+			return r
+		}
+	}
+	if len(remotes) > 0 {
+		return remotes[0]
+	}
+	return ""
+}
+
+// semver is a parsed vMAJOR.MINOR.PATCH tag.
+type semver struct {
+	major, minor, patch int
+	prefix              string // "v" or ""
+}
+
+func parseSemver(s string) (semver, bool) {
+	v := semver{}
+	if strings.HasPrefix(s, "v") {
+		v.prefix = "v"
+		s = s[1:]
+	}
+	parts := strings.Split(s, ".")
+	if len(parts) != 3 {
+		return v, false
+	}
+	nums := [3]int{}
+	for i, p := range parts {
+		n := 0
+		if p == "" {
+			return v, false
+		}
+		for _, r := range p {
+			if r < '0' || r > '9' {
+				return v, false
+			}
+			n = n*10 + int(r-'0')
+		}
+		nums[i] = n
+	}
+	v.major, v.minor, v.patch = nums[0], nums[1], nums[2]
+	return v, true
+}
+
+func (v semver) String() string {
+	return fmt.Sprintf("%s%d.%d.%d", v.prefix, v.major, v.minor, v.patch)
+}
+
+func (v semver) less(o semver) bool {
+	if v.major != o.major {
+		return v.major < o.major
+	}
+	if v.minor != o.minor {
+		return v.minor < o.minor
+	}
+	return v.patch < o.patch
+}
+
+// latestSemver finds the highest semver tag, or ok=false when there is none.
+func latestSemver(tags []git.Branch) (semver, bool) {
+	var best semver
+	found := false
+	for _, t := range tags {
+		v, ok := parseSemver(t.Name)
+		if !ok {
+			continue
+		}
+		if !found || best.less(v) {
+			best, found = v, true
+		}
+	}
+	return best, found
+}
+
+// versionTagMenu proposes the next patch / minor / major version tag at HEAD.
+func (m *Model) versionTagMenu() tea.Cmd {
+	latest, ok := latestSemver(m.refs.Tags)
+	title := "New version tag"
+	var choices []struct {
+		v    semver
+		desc string
+	}
+	if ok {
+		title = "New version — latest " + latest.String()
+		choices = []struct {
+			v    semver
+			desc string
+		}{
+			{semver{latest.major, latest.minor, latest.patch + 1, latest.prefix}, "patch · bug fixes"},
+			{semver{latest.major, latest.minor + 1, 0, latest.prefix}, "minor · new features"},
+			{semver{latest.major + 1, 0, 0, latest.prefix}, "major · breaking / stable"},
+		}
+	} else {
+		title = "New version — no version tags yet"
+		choices = []struct {
+			v    semver
+			desc string
+		}{
+			{semver{0, 1, 0, "v"}, "first pre-release"},
+			{semver{1, 0, 0, "v"}, "first stable release"},
+		}
+	}
+	var items []menuItem
+	for _, c := range choices {
+		name := c.v.String()
+		items = append(items, menuItem{label: pad(name, 10) + c.desc, run: func(m *Model) tea.Cmd { return m.tagMessagePrompt(name, "HEAD", true) }})
+	}
+	items = append(items, sep(), menuItem{label: "Custom…", key: "c", run: func(m *Model) tea.Cmd {
+		return m.prompt("New tag", "Tag HEAD with a custom name.", "tag name", "", func(m *Model, name string) tea.Cmd {
+			return m.tagMessagePrompt(name, "HEAD", true)
+		})
+	}})
+	mn := &menu{title: title, items: items}
+	mn.layout()
+	m.openMenu(mn, (m.width-mn.w)/2, (m.height-mn.h)/2)
+	if ok {
+		mn.cur = 1 // minor is the usual bump
+	}
+	return nil
 }
 
 func (m *Model) resetMenu(hash, label string) *menu {
@@ -335,7 +480,21 @@ func (m *Model) branchActions(b *git.Branch) *menu {
 			menuItem{label: "Delete on " + b.Remote, key: "d", danger: true, run: func(m *Model) tea.Cmd { return m.deleteRef(b) }},
 		)
 	case git.RefTag:
-		items = append(items, sep(), menuItem{label: "Delete tag", key: "d", danger: true, run: func(m *Model) tea.Cmd { return m.deleteRef(b) }})
+		items = append(items, sep())
+		if remote := m.defaultRemote(); remote != "" {
+			items = append(items,
+				menuItem{label: "Push tag to " + remote, key: "P", run: func(m *Model) tea.Cmd {
+					return m.action("Push "+name, func() error { return m.repo.PushTag(remote, name) })
+				}},
+				menuItem{label: "Delete tag on " + remote, danger: true, run: func(m *Model) tea.Cmd {
+					m.confirm("Delete "+name+" on "+remote+"?", "The tag is removed from the remote for everyone.", "Delete remote tag", true, func(m *Model) tea.Cmd {
+						return m.action("Delete "+name+" on "+remote, func() error { return m.repo.DeleteRemoteTag(remote, name) })
+					})
+					return nil
+				}},
+			)
+		}
+		items = append(items, menuItem{label: "Delete local tag", key: "d", danger: true, run: func(m *Model) tea.Cmd { return m.deleteRef(b) }})
 	}
 	items = append(items, sep(), menuItem{label: "Copy name", key: "y", run: func(m *Model) tea.Cmd { return copyToClipboard("name", name) }})
 	return &menu{title: name, items: items}
@@ -353,6 +512,7 @@ func (m *Model) menuForBranch(n *bnode) *menu {
 			{label: "Fetch (all, prune)", key: "f", run: func(m *Model) tea.Cmd { return m.action("Fetch", m.repo.Fetch) }},
 			sep(),
 			{label: "New branch…", key: "b", run: func(m *Model) tea.Cmd { return m.newBranchPrompt("HEAD", "HEAD", true) }},
+			{label: "New version tag…", key: "V", run: func(m *Model) tea.Cmd { return m.versionTagMenu() }},
 		}
 		return &menu{title: n.label, items: items}
 	}

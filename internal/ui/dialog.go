@@ -19,14 +19,15 @@ const (
 )
 
 type dialog struct {
-	kind   dialogKind
-	title  string
-	body   string
-	ok     string
-	danger bool
-	quit   bool // the quit confirmation: a second `q` confirms
-	input  textinput.Model
-	onOK   func(m *Model, value string) tea.Cmd
+	kind       dialogKind
+	title      string
+	body       string
+	ok         string
+	danger     bool
+	quit       bool // the quit confirmation: a second `q` confirms
+	allowEmpty bool // input dialogs: Enter with no text is accepted
+	input      textinput.Model
+	onOK       func(m *Model, value string) tea.Cmd
 }
 
 // confirmQuit asks before leaving; `q` again, `y` or Enter exits.
@@ -38,6 +39,14 @@ func (m *Model) confirmQuit() {
 func (m *Model) confirm(title, body, ok string, danger bool, onOK func(m *Model) tea.Cmd) {
 	m.dialog = &dialog{kind: dlgConfirm, title: title, body: body, ok: ok, danger: danger,
 		onOK: func(m *Model, _ string) tea.Cmd { return onOK(m) }}
+}
+
+// promptOptional is prompt() where an empty answer is a valid answer.
+func (m *Model) promptOptional(title, body, placeholder string, onOK func(m *Model, value string) tea.Cmd) tea.Cmd {
+	cmd := m.prompt(title, body, placeholder, "", onOK)
+	m.dialog.allowEmpty = true
+	m.dialog.ok = "Continue"
+	return cmd
 }
 
 func (m *Model) prompt(title, body, placeholder, initial string, onOK func(m *Model, value string) tea.Cmd) tea.Cmd {

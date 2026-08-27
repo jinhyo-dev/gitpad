@@ -358,6 +358,8 @@ func (m *Model) handleKey(k tea.KeyMsg) tea.Cmd {
 		return m.openPush()
 	case "C":
 		return m.openCommit()
+	case "V":
+		return m.versionTagMenu()
 	case "/":
 		return m.startSearch()
 	case "a":
@@ -819,7 +821,7 @@ func (m *Model) dialogKey(k tea.KeyMsg) tea.Cmd {
 		value := ""
 		if d.kind == dlgInput {
 			value = strings.TrimSpace(d.input.Value())
-			if value == "" {
+			if value == "" && !d.allowEmpty {
 				return nil
 			}
 		}
