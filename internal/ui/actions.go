@@ -512,7 +512,7 @@ func (m *Model) menuForBranch(n *bnode) *menu {
 			{label: "Fetch (all, prune)", key: "f", run: func(m *Model) tea.Cmd { return m.action("Fetch", m.repo.Fetch) }},
 			sep(),
 			{label: "New branch…", key: "b", run: func(m *Model) tea.Cmd { return m.newBranchPrompt("HEAD", "HEAD", true) }},
-			{label: "New version tag…", key: "V", run: func(m *Model) tea.Cmd { return m.versionTagMenu() }},
+			{label: "New version tag…", key: "v", run: func(m *Model) tea.Cmd { return m.versionTagMenu() }},
 		}
 		return &menu{title: n.label, items: items}
 	}

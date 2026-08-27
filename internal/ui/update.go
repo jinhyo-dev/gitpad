@@ -358,7 +358,7 @@ func (m *Model) handleKey(k tea.KeyMsg) tea.Cmd {
 		return m.openPush()
 	case "C":
 		return m.openCommit()
-	case "V":
+	case "v":
 		return m.versionTagMenu()
 	case "/":
 		return m.startSearch()

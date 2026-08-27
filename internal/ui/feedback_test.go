@@ -81,7 +81,7 @@ func TestSemverHelpers(t *testing.T) {
 func TestVersionTagFlow(t *testing.T) {
 	dir := makeRepo(t) // has v0.1.0
 	h := newHarness(t, dir, 120, 30)
-	h.press("V")
+	h.press("v")
 	m := h.m()
 	if m.menu == nil || !strings.Contains(m.menu.title, "v0.1.0") || m.menu.cur != 1 {
 		t.Fatalf("version menu should open on the minor bump: %+v", m.menu)
