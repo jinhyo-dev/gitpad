@@ -200,13 +200,14 @@ func (m *Model) renderPanels() string {
 	branches := frame("Branches", "", m.renderBranches(bl.w, bl.h), bl.w, bl.h, m.focus == PanelBranches)
 
 	if m.commitOpen {
-		center := frame(m.commitTitle(), plural(len(m.status), "file", "files"), m.renderCommit(lg.w, lg.h), lg.w, lg.h, true)
+		center := frame(m.commitTitle(), plural(len(m.status), "file", "files"), m.renderCommit(lg.w, lg.h), lg.w, lg.h, m.commit == nil || m.commit.focus != cfDiff)
 		dr := m.diffRect
+		diffActive := m.commit != nil && m.commit.focus == cfDiff
 		var right string
 		if m.diff != nil {
-			right = frame(m.diffTitle(), "", m.renderDiff(dr.w, dr.h), dr.w, dr.h, false)
+			right = frame(m.diffTitle(), "", m.renderDiff(dr.w, dr.h), dr.w, dr.h, diffActive)
 		} else {
-			right = frame("Diff", "", []string{"", theme.MutedSt.Render("  Select a file to preview its changes")}, dr.w, dr.h, false)
+			right = frame("Diff", "", []string{"", theme.MutedSt.Render("  Select a file to preview its changes")}, dr.w, dr.h, diffActive)
 		}
 		return lipgloss.JoinHorizontal(lipgloss.Top, branches, center, right)
 	}
@@ -302,8 +303,10 @@ func (m *Model) renderStatusBar() string {
 		hints = keyHints("enter", "push", "f", "force with lease", "t", "tags", "esc", "cancel")
 	case m.commitOpen && m.commit != nil && m.commit.focus == cfMessage:
 		hints = keyHints(keyLabel("ctrl+s"), "commit", keyLabel("ctrl+p"), "commit & push", "↑", "history", "tab", "buttons", "esc", "files")
+	case m.commitOpen && m.commit != nil && m.commit.focus == cfDiff:
+		hints = keyHints("↑↓", "scroll", "n/p", "next/prev file", "←/esc", "files", "1 2 3", "files/message/diff")
 	case m.commitOpen:
-		hints = keyHints("space", "check", "a", "check all", "enter/tab", "message", "d", "discard", keyLabel("ctrl+s"), "commit", "esc", "back")
+		hints = keyHints("enter", "check", "a", "check all", "tab", "message", "→", "diff", "1 2 3", "pane", "d", "discard", keyLabel("ctrl+s"), "commit", "esc", "back")
 	}
 	if m.menu == nil && m.dialog == nil && m.push == nil {
 		hints += theme.DimSt.Render("  ") + theme.QuitKey.Render("q") + " " + theme.KeyLabel.Render("exit")

@@ -129,12 +129,14 @@ files grouped into **Changes** and **Unversioned files**, a multi-line
 message editor, and *Commit* / *Commit & Push* buttons; the right column
 previews the diff of the highlighted file.
 
-- `space` checks a file (or a whole folder / group), `a` checks everything.
+- `enter` (or `space`) checks a file — or a whole folder / group — and `a`
+  checks everything. `tab`, `1 2 3` or `→` move between the file list, the
+  message and the diff preview, which scrolls with the arrow keys.
   Tracked changes are checked by default, unversioned files are not.
 - Checkboxes are gitpad's own selection: the index is not touched until you
   commit, and then only the checked files are committed
   (`git commit --only -- <files>`).
-- `enter` / `tab` moves to the message; `↑` on the first line recalls your
+- `tab` moves to the message; `↑` on the first line recalls your
   recent commit messages; `ctrl+s` commits, `ctrl+p` commits and opens the
   push dialog.
 

@@ -24,6 +24,8 @@ const (
 	cfFiles commitFocus = iota
 	cfMessage
 	cfButtons
+	cfDiff // the diff preview on the right
+	cfCount
 )
 
 type commitState struct {
@@ -317,9 +319,20 @@ func (m *Model) commitKey(k tea.KeyMsg) tea.Cmd {
 	case "ctrl+p":
 		return m.doCommit(true)
 	case "tab":
-		return m.commitSetFocus((c.focus + 1) % 3)
+		return m.commitSetFocus((c.focus + 1) % cfCount)
 	case "shift+tab":
-		return m.commitSetFocus((c.focus + 2) % 3)
+		return m.commitSetFocus((c.focus + cfCount - 1) % cfCount)
+	}
+	// Direct pane selection works everywhere except inside the text editor.
+	if c.focus != cfMessage {
+		switch key {
+		case "1":
+			return m.commitSetFocus(cfFiles)
+		case "2":
+			return m.commitSetFocus(cfMessage)
+		case "3":
+			return m.commitSetFocus(cfDiff)
+		}
 	}
 	switch c.focus {
 	case cfMessage:
@@ -336,6 +349,8 @@ func (m *Model) commitKey(k tea.KeyMsg) tea.Cmd {
 			return m.commitSetFocus(cfMessage)
 		}
 		return nil
+	case cfDiff:
+		return m.commitDiffKey(key)
 	}
 	// Files.
 	switch key {
@@ -345,14 +360,9 @@ func (m *Model) commitKey(k tea.KeyMsg) tea.Cmd {
 	case "a":
 		m.toggleAllSelection()
 		return nil
-	case "enter":
-		if n := m.selectedFileNode(); n != nil && n.isDir {
-			m.fcollapsed[n.key] = !m.fcollapsed[n.key]
-			m.rebuildFileTree()
-			return nil
-		}
-		return m.commitSetFocus(cfMessage)
-	case " ":
+	case "enter", " ":
+		// Enter (or space) checks / unchecks; on a folder or group it
+		// toggles everything below it.
 		if n := m.selectedFileNode(); n != nil {
 			if n.isDir {
 				m.toggleNodeSelection(n)
@@ -361,12 +371,20 @@ func (m *Model) commitKey(k tea.KeyMsg) tea.Cmd {
 			}
 		}
 		return nil
-	case "left", "right":
-		if n := m.selectedFileNode(); n != nil && n.isDir {
-			m.fcollapsed[n.key] = key == "left"
+	case "left":
+		if n := m.selectedFileNode(); n != nil && n.isDir && !m.fcollapsed[n.key] {
+			m.fcollapsed[n.key] = true
 			m.rebuildFileTree()
 		}
 		return nil
+	case "right", "l":
+		// Unfold a collapsed folder, otherwise move on to the diff.
+		if n := m.selectedFileNode(); n != nil && n.isDir && m.fcollapsed[n.key] {
+			m.fcollapsed[n.key] = false
+			m.rebuildFileTree()
+			return nil
+		}
+		return m.commitSetFocus(cfDiff)
 	case "d":
 		if n := m.selectedFileNode(); n != nil && !n.isDir {
 			return m.discardPrompt(*n.file)
@@ -382,6 +400,41 @@ func (m *Model) commitKey(k tea.KeyMsg) tea.Cmd {
 	prev := m.fcur
 	if m.navigate(key, &m.fcur, len(m.fnodes), filesRect.h/2) && m.fcur != prev {
 		return m.commitDiffLater()
+	}
+	return nil
+}
+
+// commitDiffKey scrolls the diff preview; ← / esc return to the files.
+func (m *Model) commitDiffKey(key string) tea.Cmd {
+	switch key {
+	case "esc", "left", "h":
+		return m.commitSetFocus(cfFiles)
+	case "n":
+		return m.diffStep(1)
+	case "p":
+		return m.diffStep(-1)
+	case "q":
+		m.closeCommit()
+		return nil
+	}
+	if m.diff == nil {
+		return nil
+	}
+	h := m.diffRect.h
+	d := m.diff
+	switch key {
+	case "j", "down":
+		d.scroll = minInt(d.scroll+1, m.diffMaxScroll())
+	case "k", "up":
+		d.scroll = maxInt(d.scroll-1, 0)
+	case "ctrl+d", "pgdown", " ":
+		d.scroll = minInt(d.scroll+h/2, m.diffMaxScroll())
+	case "ctrl+u", "pgup":
+		d.scroll = maxInt(d.scroll-h/2, 0)
+	case "g", "home":
+		d.scroll = 0
+	case "G", "end":
+		d.scroll = m.diffMaxScroll()
 	}
 	return nil
 }
@@ -485,6 +538,8 @@ func (m *Model) commitMouse(msg tea.MouseMsg) tea.Cmd {
 		return tea.Batch(cmd, m.commitDiffNow())
 	case msgRect.contains(x, y):
 		return m.commitSetFocus(cfMessage)
+	case m.diffRect.contains(x, y):
+		return m.commitSetFocus(cfDiff)
 	case btnRect.contains(x, y):
 		cmd := m.commitSetFocus(cfButtons)
 		rel := x - btnRect.x

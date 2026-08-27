@@ -351,8 +351,8 @@ func TestWalkthrough(t *testing.T) {
 		t.Fatalf("commit workspace should open with main.go diff: open=%v diff=%+v", m.commitOpen, m.diff)
 	}
 	h.check("commit workspace")
-	h.press(" ")           // uncheck main.go
-	h.press("j", "j", " ") // check new.txt
+	h.press("enter")       // uncheck main.go (enter toggles)
+	h.press("j", "j", " ") // check new.txt (space still works)
 	m = h.m()
 	if m.selected["main.go"] || !m.selected["new.txt"] {
 		t.Fatalf("selection toggles failed: %+v", m.selected)
@@ -362,7 +362,20 @@ func TestWalkthrough(t *testing.T) {
 	if len(m.commits) != 5 || m.commit.focus != cfMessage {
 		t.Fatalf("commit without message must be refused (commits=%d focus=%v)", len(m.commits), m.commit.focus)
 	}
-	h.press("t", "e", "s", "t", ":", " ", "커", "밋", "ctrl+s")
+	// Leave the editor, focus the diff pane, scroll it, and come back.
+	h.press("esc", "3")
+	if h.m().commit.focus != cfDiff {
+		t.Fatal("3 should focus the diff preview in the commit workspace")
+	}
+	h.press("down", "esc")
+	if h.m().commit.focus != cfFiles {
+		t.Fatal("esc in the diff should return to the files")
+	}
+	h.press("tab", "tab", "tab", "tab") // files → message → buttons → diff → files
+	if h.m().commit.focus != cfFiles {
+		t.Fatalf("tab should cycle through four panes, got %v", h.m().commit.focus)
+	}
+	h.press("tab", "t", "e", "s", "t", ":", " ", "커", "밋", "ctrl+s")
 	m = h.m()
 	if len(m.commits) != 6 {
 		var hist []string
@@ -384,7 +397,7 @@ func TestWalkthrough(t *testing.T) {
 	}
 	// Second round: re-check main.go (unchecked state persists between opens),
 	// recall the previous message with ↑, commit.
-	h.press("C", " ", "enter", "up")
+	h.press("C", "enter", "tab", "up")
 	m = h.m()
 	if got := m.commit.msg.Value(); got != "test: 커밋" {
 		t.Fatalf("history recall failed: %q", got)

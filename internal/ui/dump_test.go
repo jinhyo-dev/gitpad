@@ -36,7 +36,7 @@ func TestDumpScreens(t *testing.T) {
 	save("6-help")
 	h.press("?", "1", "j", "j", " ", "j", "enter")
 	save("7-branch-menu")
-	h.press("esc", "2", "g", "C", "j", "j", " ", "enter", "f", "e", "a", "t", ":", " ", "커", "밋", " ", "메", "시", "지")
+	h.press("esc", "2", "g", "C", "j", "j", "enter", "tab", "f", "e", "a", "t", ":", " ", "커", "밋", " ", "메", "시", "지")
 	save("8-commit")
 	h.press("esc", "esc", "P")
 	save("9-push")
