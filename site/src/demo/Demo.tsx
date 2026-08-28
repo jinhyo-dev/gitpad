@@ -1169,10 +1169,23 @@ export function Demo() {
         tabIndex={0}
         onKeyDown={onKey}
         onFocus={() => setFocused(true)}
-        onBlur={(e) => {
-          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocused(false);
+        onBlur={() => {
+          // Safari reports relatedTarget as null even when focus stays inside;
+          // check the real active element after the browser has moved focus.
+          window.setTimeout(() => {
+            const el = boxRef.current;
+            if (el && !el.contains(document.activeElement)) setFocused(false);
+          }, 0);
         }}
-        onMouseDown={() => setFocused(true)}
+        onMouseDown={(e) => {
+          // Safari does not focus a tabindex div on click — do it ourselves and
+          // stop the default focus change (which would blur us again).
+          const target = e.target as HTMLElement;
+          if (target.closest("textarea, button")) return;
+          e.preventDefault();
+          boxRef.current?.focus({ preventScroll: true });
+          setFocused(true);
+        }}
         className={
           "tui relative select-none overflow-hidden rounded-xl border bg-surface text-text outline-none " +
           (focused ? "border-accent shadow-glow" : "border-surface2")
