@@ -75,12 +75,14 @@ func (m *Model) deleteRef(b *git.Branch) tea.Cmd {
 		if b.IsHead {
 			return m.showToast("cannot delete the current branch", 2)
 		}
-		name := b.Name
-		m.confirm("Delete branch "+name+"?", "The branch is removed locally. Commits stay reachable from the reflog for a while.", "Delete", true, func(m *Model) tea.Cmd {
+		name, hash := b.Name, b.Hash
+		m.confirm("Delete branch "+name+"?", "The branch is removed locally. Undo (u) re-creates it.", "Delete", true, func(m *Model) tea.Cmd {
+			m.nextUndo = &undoPoint{kind: undoRecreateBranch, name: name, hash: hash}
 			return m.actionWith("Delete "+name, func() error { return m.repo.DeleteBranch(name, false) },
 				func(m *Model, err error) tea.Cmd {
 					if strings.Contains(err.Error(), "not fully merged") {
-						m.confirm("Branch "+name+" is not fully merged", "Force delete anyway? Unmerged commits will only be reachable from the reflog.", "Force delete", true, func(m *Model) tea.Cmd {
+						m.confirm("Branch "+name+" is not fully merged", "Force delete anyway? Undo (u) re-creates it.", "Force delete", true, func(m *Model) tea.Cmd {
+							m.nextUndo = &undoPoint{kind: undoRecreateBranch, name: name, hash: hash}
 							return m.action("Force delete "+name, func() error { return m.repo.DeleteBranch(name, true) })
 						})
 						return nil
@@ -94,8 +96,9 @@ func (m *Model) deleteRef(b *git.Branch) tea.Cmd {
 			return m.action("Delete "+b.Name, func() error { return m.repo.DeleteRemoteBranch(remote, name) })
 		})
 	default:
-		name := b.Name
-		m.confirm("Delete tag "+name+"?", "Only the local tag is removed.", "Delete", true, func(m *Model) tea.Cmd {
+		name, hash := b.Name, b.Hash
+		m.confirm("Delete tag "+name+"?", "Only the local tag is removed. Undo (u) re-creates it.", "Delete", true, func(m *Model) tea.Cmd {
+			m.nextUndo = &undoPoint{kind: undoRecreateTag, name: name, hash: hash}
 			return m.action("Delete tag "+name, func() error { return m.repo.DeleteTag(name) })
 		})
 	}
@@ -152,6 +155,7 @@ func (m *Model) newTagPrompt(at, atLabel string) tea.Cmd {
 // then offers to push it.
 func (m *Model) tagMessagePrompt(name, at string, offerPush bool) tea.Cmd {
 	return m.promptOptional("Tag "+name, "Message for an annotated tag — leave empty for a lightweight tag.", "release notes / message", func(m *Model, msg string) tea.Cmd {
+		m.nextUndo = &undoPoint{kind: undoDeleteTag, name: name}
 		return m.actionThen("Tag "+name, func() error { return m.repo.CreateTagAnnotated(name, at, msg) }, func(m *Model) tea.Cmd {
 			if !offerPush {
 				return nil

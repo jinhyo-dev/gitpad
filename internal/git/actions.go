@@ -14,6 +14,7 @@ const (
 	ResetSoft  ResetMode = "--soft"
 	ResetMixed ResetMode = "--mixed"
 	ResetHard  ResetMode = "--hard"
+	ResetKeep  ResetMode = "--keep"
 )
 
 func (r *Runner) Checkout(ref string) error { _, err := r.RunWrite("checkout", ref); return err }

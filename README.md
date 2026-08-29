@@ -105,6 +105,7 @@ the detection.
 | `d` | delete branch/tag (branches) · discard file (local files) |
 | `H` | show the file's history in the log |
 | `i` | interactive rebase from the selected commit |
+| `u` | undo the last history-changing operation |
 | `y` | copy hash / path / name |
 | `f` `p` `P` | fetch · pull chooser · push dialog |
 | `v` | new version tag (patch / minor / major) + push |
@@ -164,6 +165,16 @@ reorder, `enter` opens the row menu, `ctrl+s` starts after a confirmation.
 Rewords are applied without opening an editor; conflicts or `edit` stops show
 the REBASING badge with *Continue* / *Abort* in the changes menu, and the old
 history stays reachable as `ORIG_HEAD`.
+
+### Undo (`u`)
+
+Every history-changing operation gitpad performs — commit, rebase, reset,
+cherry-pick, revert, merge, pull, checkout, branch or tag deletion — records
+where HEAD was. `u` shows what undoing the last one would do and reverts it:
+commits are undone with `reset --soft` (the changes stay staged), rewrites with
+`reset --keep` (refused rather than overwriting local edits), switches by
+checking the previous branch out again, deletions by re-creating the ref. The
+stack lives for the session; git's reflog remains the safety net beyond that.
 
 ### Push dialog (`P`)
 

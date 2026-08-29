@@ -107,6 +107,7 @@ type actionDoneMsg struct {
 	keepHash string
 	onErr    func(m *Model, err error) tea.Cmd
 	then     func(m *Model) tea.Cmd // runs on success, before the reload
+	undo     undoPoint
 }
 
 type initMsg struct{}
@@ -256,8 +257,15 @@ func (m *Model) actionFull(label string, fn func() error, onErr func(m *Model, e
 	if c := m.selectedCommit(); c != nil {
 		keep = c.Hash
 	}
+	// Remember where HEAD is so the operation can be undone.
+	up := undoPoint{label: label, kind: undoKindFor(label), head: m.info.HeadHash, branch: m.info.Head, detached: m.info.Detached}
+	if m.nextUndo != nil {
+		up = *m.nextUndo
+		up.label = label
+		m.nextUndo = nil
+	}
 	return func() tea.Msg {
-		return actionDoneMsg{label: label, err: fn(), keepHash: keep, onErr: onErr, then: then}
+		return actionDoneMsg{label: label, err: fn(), keepHash: keep, onErr: onErr, then: then, undo: up}
 	}
 }
 

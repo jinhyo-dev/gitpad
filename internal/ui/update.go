@@ -108,6 +108,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, tea.Batch(cmd, mm.loadAll(msg.keepHash))
 		}
+		mm.pushUndo(msg.undo)
 		cmd = tea.Batch(mm.showToast(msg.label, 1), mm.loadAll(msg.keepHash))
 		if msg.then != nil {
 			cmd = tea.Batch(cmd, msg.then(mm))
@@ -312,6 +313,10 @@ func (m *Model) handleKey(k tea.KeyMsg) tea.Cmd {
 	switch key {
 	case "ctrl+k":
 		return m.commandPalette()
+	case "u":
+		if m.focus != PanelChanges || m.filesFor != "local" {
+			return m.undoLast()
+		}
 	case "q":
 		if m.diff != nil {
 			m.diff = nil

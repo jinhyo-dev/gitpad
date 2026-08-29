@@ -95,6 +95,11 @@ type Model struct {
 	rebase     *rebaseState
 	rebaseOpen bool
 
+	// undo stack of HEAD-changing operations (see undo.go); nextUndo lets an
+	// action describe a non-HEAD undo (branch / tag re-creation) up front
+	undo     []undoPoint
+	nextUndo *undoPoint
+
 	// CI status column (GitHub checks), keyed by commit hash
 	ci        ci.Provider
 	ciResults map[string]ci.Result

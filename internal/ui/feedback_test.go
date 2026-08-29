@@ -268,3 +268,77 @@ func TestInteractiveRebaseWorkspace(t *testing.T) {
 		t.Fatalf("history after rebase: %s (toast=%+v)", got, m.toast)
 	}
 }
+
+// Undo walks back commits, resets and branch deletions.
+func TestUndo(t *testing.T) {
+	dir := makeRepo(t)
+	h := newHarness(t, dir, 150, 40)
+	h.press("u")
+	if h.m().dialog != nil {
+		t.Fatal("nothing to undo yet — no dialog expected")
+	}
+	// 1) Commit everything, then undo it: the commit disappears, changes stay.
+	h.press("C", "a", "tab", "w", "i", "p", "ctrl+s")
+	m := h.m()
+	if len(m.commits) != 6 {
+		t.Fatalf("expected 6 commits after committing, got %d", len(m.commits))
+	}
+	h.press("u")
+	m = h.m()
+	if m.dialog == nil || !strings.Contains(m.dialog.title, "Undo Commit") {
+		t.Fatalf("undo should ask about the commit: %+v", m.dialog)
+	}
+	h.press("enter")
+	m = h.m()
+	if len(m.commits) != 5 || len(m.status) == 0 {
+		t.Fatalf("commit should be undone with changes kept: commits=%d status=%d", len(m.commits), len(m.status))
+	}
+	// 2) Delete a branch from the Branches pane, then undo re-creates it.
+	// Branches: HEAD, Local, ▸ feat (collapsed), … → unfold feat, select side.
+	h.press("1", "g", "j", "j", "right", "j")
+	if mm := h.m(); (&mm).selectedBranchNode() == nil || (&mm).selectedBranchNode().branch == nil || (&mm).selectedBranchNode().branch.Name != "feat/side" {
+		t.Fatalf("expected feat/side selected, got %+v", h.m().bnodes[h.m().bcur])
+	}
+	h.press("d")
+	if d := h.m().dialog; d == nil {
+		mm := h.m()
+		t.Fatalf("delete should ask first (focus=%v bcur=%d node=%+v toast=%+v)", mm.focus, mm.bcur, mm.bnodes[mm.bcur], mm.toast)
+	}
+	h.press("enter")
+	m = h.m()
+	for _, b := range m.refs.Locals {
+		if b.Name == "feat/side" {
+			var errs []string
+			for _, e := range m.repo.History() {
+				if e.Err != nil {
+					errs = append(errs, strings.Join(e.Args, " ")+": "+e.Err.Error())
+				}
+			}
+			t.Fatalf("branch should be deleted (toast=%+v dialog=%v errors=%v)", m.toast, m.dialog != nil, errs)
+		}
+	}
+	h.press("u", "enter")
+	m = h.m()
+	found := false
+	for _, b := range m.refs.Locals {
+		if b.Name == "feat/side" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("undo should re-create the branch (toast=%+v)", m.toast)
+	}
+	// 3) Hard reset to an older commit, then undo brings HEAD back.
+	head := m.info.HeadHash
+	h.press("2", "j", "j", "enter", "r") // commit menu → Reset ▸
+	h.press("j", "j", "enter")           // Hard
+	h.press("enter")                     // confirm
+	m = h.m()
+	if m.info.HeadHash == head {
+		t.Fatal("reset should have moved HEAD")
+	}
+	h.press("u", "enter")
+	if m := h.m(); m.info.HeadHash != head {
+		t.Fatalf("undo should restore HEAD %s, got %s (toast=%+v)", head[:8], m.info.HeadHash[:8], m.toast)
+	}
+}
