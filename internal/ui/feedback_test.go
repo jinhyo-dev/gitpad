@@ -219,3 +219,52 @@ func TestCommandPalette(t *testing.T) {
 		t.Fatal("running the entry should open the help overlay")
 	}
 }
+
+// Interactive rebase workspace: drop one commit, reword another, run.
+func TestInteractiveRebaseWorkspace(t *testing.T) {
+	dir := t.TempDir()
+	run(t, dir, "init", "-q", "-b", "main")
+	for _, name := range []string{"one", "two", "three", "four"} {
+		write(t, dir, name+".txt", name+"\n")
+		run(t, dir, "add", ".")
+		run(t, dir, "commit", "-q", "-m", "commit "+name)
+	}
+	h := newHarness(t, dir, 150, 40)
+	h.press("j", "j") // "two" (rows: four, three, two, one)
+	h.press("i")
+	m := h.m()
+	if !m.rebaseOpen || m.rebase == nil || len(m.rebase.steps) != 3 {
+		t.Fatalf("rebase workspace should open with 3 commits: open=%v %+v", m.rebaseOpen, m.rebase)
+	}
+	h.check("rebase workspace")
+	// Cursor starts on the newest ("four"): drop "three", reword "two".
+	h.press("j", "d", "j", "r")
+	if h.m().dialog == nil {
+		t.Fatal("reword should prompt for a message")
+	}
+	// Prompt is prefilled with the subject; replace it.
+	dl := h.m()
+	dl.dialog.input.SetValue("")
+	h.model = dl
+	h.press("T", "W", "O", "enter")
+	m = h.m()
+	if m.rebase.steps[1].Action != "drop" || m.rebase.steps[2].Action != "reword" || m.rebase.steps[2].Message != "TWO" {
+		t.Fatalf("plan not as expected: %+v", m.rebase.steps)
+	}
+	h.press("ctrl+s")
+	if h.m().dialog == nil {
+		t.Fatal("start should ask for confirmation")
+	}
+	h.press("enter")
+	m = h.m()
+	if m.rebaseOpen {
+		t.Fatal("workspace should close after the rebase")
+	}
+	var subjects []string
+	for _, c := range m.commits {
+		subjects = append(subjects, c.Subject)
+	}
+	if got := strings.Join(subjects, "|"); got != "commit four|TWO|commit one" {
+		t.Fatalf("history after rebase: %s (toast=%+v)", got, m.toast)
+	}
+}

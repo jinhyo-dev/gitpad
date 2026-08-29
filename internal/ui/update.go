@@ -122,6 +122,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case pushDataMsg:
 		mm.onPushData(msg)
+	case rebasePlanMsg:
+		cmd = mm.onRebasePlan(msg)
 	case toastClearMsg:
 		if mm.toast != nil && mm.toast.id == msg.id {
 			mm.toast = nil
@@ -193,6 +195,9 @@ func (m *Model) onData(msg dataMsg) tea.Cmd {
 	m.syncSelection()
 	if m.commitOpen && len(m.status) == 0 {
 		m.closeCommit()
+	}
+	if m.rebaseOpen && m.info.State != "" {
+		m.closeRebase()
 	}
 	m.logTruncated = len(msg.commits) >= m.logOpts.Limit
 
@@ -294,6 +299,11 @@ func (m *Model) handleKey(k tea.KeyMsg) tea.Cmd {
 		return m.branchChipKey(k)
 	case m.push != nil:
 		return m.pushKey(k)
+	case m.rebaseOpen:
+		if key == "ctrl+k" {
+			return m.commandPalette()
+		}
+		return m.rebaseKey(k)
 	case m.commitOpen:
 		return m.commitKey(k)
 	}
@@ -567,6 +577,8 @@ func (m *Model) logKey(key string) tea.Cmd {
 		if c := m.selectedCommit(); c != nil {
 			return copyToClipboard("hash "+c.Short, c.Hash)
 		}
+	case "i":
+		return m.startRebase(m.selectedCommit())
 	case "c":
 		return m.openCommit()
 	case "d", " ":
@@ -1071,6 +1083,9 @@ func (m *Model) handleMouse(msg tea.MouseMsg) tea.Cmd {
 			delta = -3
 		}
 		return m.scrollAt(msg.X, msg.Y, delta)
+	}
+	if m.rebaseOpen && m.rects[PanelLog].contains(msg.X, msg.Y) {
+		return m.rebaseMouse(msg)
 	}
 	if m.commitOpen && (m.rects[PanelLog].contains(msg.X, msg.Y) || m.diffRect.contains(msg.X, msg.Y)) {
 		return m.commitMouse(msg)

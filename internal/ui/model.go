@@ -92,6 +92,8 @@ type Model struct {
 	commitOpen bool
 	push       *pushState
 	lastPull   string // merge | rebase | fetch
+	rebase     *rebaseState
+	rebaseOpen bool
 
 	// CI status column (GitHub checks), keyed by commit hash
 	ci        ci.Provider

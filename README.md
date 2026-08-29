@@ -104,6 +104,7 @@ the detection.
 | `s` | show branch in log (branches) |
 | `d` | delete branch/tag (branches) · discard file (local files) |
 | `H` | show the file's history in the log |
+| `i` | interactive rebase from the selected commit |
 | `y` | copy hash / path / name |
 | `f` `p` `P` | fetch · pull chooser · push dialog |
 | `v` | new version tag (patch / minor / major) + push |
@@ -153,6 +154,16 @@ previews the diff of the highlighted file.
 - `tab` moves to the message; `↑` on the first line recalls your
   recent commit messages; `ctrl+s` commits, `ctrl+p` commits and opens the
   push dialog.
+
+### Interactive rebase (`i`)
+
+Select a commit in the log and press `i` (or *Interactive rebase from here…*
+in its menu): every commit from there up to HEAD opens as an editable plan.
+`p r e s f d` set pick / reword / edit / squash / fixup / drop, `shift+↑↓`
+reorder, `enter` opens the row menu, `ctrl+s` starts after a confirmation.
+Rewords are applied without opening an editor; conflicts or `edit` stops show
+the REBASING badge with *Continue* / *Abort* in the changes menu, and the old
+history stays reachable as `ORIG_HEAD`.
 
 ### Push dialog (`P`)
 

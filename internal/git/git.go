@@ -82,10 +82,19 @@ func (r *Runner) Run(args ...string) (string, error) {
 
 // RunWrite executes a mutating command (index locks enabled).
 func (r *Runner) RunWrite(args ...string) (string, error) {
-	return r.run(true, args...)
+	return r.runEnv(true, nil, args...)
+}
+
+// RunWriteEnv is RunWrite with extra environment variables.
+func (r *Runner) RunWriteEnv(extraEnv []string, args ...string) (string, error) {
+	return r.runEnv(true, extraEnv, args...)
 }
 
 func (r *Runner) run(write bool, args ...string) (string, error) {
+	return r.runEnv(write, nil, args...)
+}
+
+func (r *Runner) runEnv(write bool, extraEnv []string, args ...string) (string, error) {
 	start := time.Now()
 	full := append([]string{"--no-pager"}, args...)
 	cmd := exec.Command("git", full...)
@@ -94,6 +103,7 @@ func (r *Runner) run(write bool, args ...string) (string, error) {
 	if !write {
 		env = append(env, "GIT_OPTIONAL_LOCKS=0")
 	}
+	env = append(env, extraEnv...)
 	cmd.Env = env
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout

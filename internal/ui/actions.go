@@ -292,6 +292,13 @@ func (m *Model) versionTagMenu() tea.Cmd {
 	return nil
 }
 
+func (m *Model) commitByHash(hash string) *git.Commit {
+	if i, ok := m.hashIdx[hash]; ok {
+		return &m.commits[i]
+	}
+	return nil
+}
+
 func (m *Model) resetMenu(hash, label string) *menu {
 	mk := func(mode git.ResetMode, title, desc string, danger bool) menuItem {
 		return menuItem{label: title, danger: danger, run: func(m *Model) tea.Cmd {
@@ -349,6 +356,9 @@ func (m *Model) menuForCommit(c *git.Commit) *menu {
 			return m.action("Revert "+short, func() error { return m.repo.Revert(hash) })
 		}},
 		{label: "Reset " + cur + " to here", key: "r", sub: func(m *Model) *menu { return m.resetMenu(hash, short) }},
+		{label: "Interactive rebase from here…", key: "i", disabled: m.info.Detached, run: func(m *Model) tea.Cmd {
+			return m.startRebase(m.commitByHash(hash))
+		}},
 	}
 	if c.Hash == m.info.HeadHash && !m.info.Detached {
 		items = append(items, menuItem{label: "Undo commit (keep changes)", key: "u", run: func(m *Model) tea.Cmd {

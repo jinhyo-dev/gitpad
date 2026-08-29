@@ -215,6 +215,8 @@ func (m *Model) renderPanels() string {
 
 	var center string
 	switch {
+	case m.rebaseOpen && m.rebase != nil:
+		center = frame(m.rebaseTitle(), "", m.renderRebase(lg.w, lg.h), lg.w, lg.h, m.focus == PanelLog)
 	case m.console:
 		center = frame("Console", plural(len(m.repo.History()), "command", "commands"), m.renderConsole(lg.w, lg.h), lg.w, lg.h, m.focus == PanelLog)
 	case m.diff != nil:
@@ -291,7 +293,7 @@ func (m *Model) renderStatusBar() string {
 	case m.detailsFocus:
 		hints = keyHints("j/k", "scroll", "↑", "back to files", "esc", "back")
 	case m.focus == PanelLog:
-		hints = keyHints(keyLabel("ctrl+k"), "palette", "enter", "actions", "c", "commit", "P", "push", "p", "pull", "f", "fetch", "v", "version tag", "/", "search", "A", "all/head", "y", "copy hash", "←→", "section")
+		hints = keyHints(keyLabel("ctrl+k"), "palette", "enter", "actions", "c", "commit", "i", "rebase", "P", "push", "p", "pull", "f", "fetch", "v", "version tag", "/", "search", "A", "all/head", "y", "copy hash", "←→", "section")
 	default:
 		if m.filesFor == "local" {
 			hints = keyHints(keyLabel("ctrl+k"), "palette", "space", "check", "c", "commit", "P", "push", "enter", "diff", "d", "discard", "H", "history", "←→", "fold/section")
@@ -304,6 +306,8 @@ func (m *Model) renderStatusBar() string {
 		hints = keyHints("enter", "push", "f", "force with lease", "t", "tags", "esc", "cancel")
 	case m.commitOpen && m.commit != nil && m.commit.focus == cfMessage:
 		hints = keyHints(keyLabel("ctrl+s"), "commit", keyLabel("ctrl+p"), "commit & push", "↑", "history", "tab", "buttons", "esc", "files")
+	case m.rebaseOpen:
+		hints = keyHints("p r e s f d", "action", "⇧↑↓", "reorder", "enter", "menu", keyLabel("ctrl+s"), "start", "esc", "cancel")
 	case m.commitOpen && m.commit != nil && m.commit.focus == cfDiff:
 		hints = keyHints("space", "check hunk", "a", "whole file", "↑↓", "hunk", "n/p", "file", "shift+↑↓", "line", "←/esc", "files")
 	case m.commitOpen:
@@ -329,7 +333,7 @@ func (m *Model) renderHelp() string {
 	}
 	sections := []section{
 		{"Navigation", []row{{"tab / 1 2 3 / h l", "switch panel"}, {"j k ↑ ↓", "move"}, {"g / G", "top / bottom"}, {keyLabel("ctrl+d") + " / " + keyLabel("ctrl+u"), "half page"}, {"space", "fold / unfold tree"}, {"← →", "fold / unfold, then previous / next pane"}, {"mouse", "click · right-click · wheel"}}},
-		{"Log", []row{{"enter / m / right-click", "commit actions"}, {"✓ ✗ ◌", "CI status (GitHub, via gh token)"}, {"/", "search message, author or hash"}, {"↑ at top", "jump to the search bar"}, {"→ / enter (filter bar)", "branch picker · esc clears"}, {"A", "all branches ↔ current"}, {"y", "copy hash"}, {"esc", "clear filters"}}},
+		{"Log", []row{{"enter / m / right-click", "commit actions"}, {"i", "interactive rebase from this commit"}, {"✓ ✗ ◌", "CI status (GitHub, via gh token)"}, {"/", "search message, author or hash"}, {"↑ at top", "jump to the search bar"}, {"→ / enter (filter bar)", "branch picker · esc clears"}, {"A", "all branches ↔ current"}, {"y", "copy hash"}, {"esc", "clear filters"}}},
 		{"Branches", []row{{"enter / m", "branch actions"}, {"c", "checkout"}, {"s", "show branch in log"}, {"d", "delete"}, {"f / p / P", "fetch / pull / push"}}},
 		{"Changes", []row{{"enter", "open diff"}, {"↑ ↓ (in diff)", "next / previous change block"}, {"shift+↑ ↓", "scroll one line"}, {"n / p", "next / prev file (in diff)"}, {"space / a", "check file / all (local)"}, {"c / C", "commit workspace"}, {"d", "discard (local)"}, {"H", "file history in log"}}},
 		{"Commit & Push", []row{{keyLabel("ctrl+s"), "commit selected files"}, {keyLabel("ctrl+p"), "commit & push"}, {"space (in diff)", "check / uncheck a hunk"}, {"↑ (in message)", "previous messages"}, {"P", "push dialog"}, {"p", "pull (merge / rebase / fetch)"}}},
