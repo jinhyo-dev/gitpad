@@ -88,7 +88,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			mm.diff.err = msg.err
 			mm.diff.lines, mm.diff.stats = parseDiff(msg.text)
 			mm.diff.blocks = changeBlocks(mm.diff.lines)
-			mm.diff.cur = 0
+			mm.diff.hunks = hunkRanges(mm.diff.lines)
+			mm.diff.cur, mm.diff.curHunk = 0, 0
 			mm.diff.scroll = clamp(mm.diff.scroll, 0, mm.diffMaxScroll())
 		}
 	case actionDoneMsg:

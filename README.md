@@ -140,8 +140,11 @@ previews the diff of the highlighted file.
 
 - `enter` (or `space`) checks a file — or a whole folder / group — and `a`
   checks everything. `tab`, `1 2 3` or `→` move between the file list, the
-  message and the diff preview; there `↑`/`↓` jump between change blocks
-  (`shift+↑`/`↓` scroll by line).
+  message and the diff preview.
+- **Hunk staging**: in the diff preview `↑`/`↓` move between hunks and
+  `space` checks or unchecks the current one (`a` toggles the whole file);
+  a partially checked file shows `[~]` with its hunk count. Only the checked
+  hunks are committed — the rest stays in the working tree, like `git add -p`.
   Tracked changes are checked by default, unversioned files are not.
 - Checkboxes are gitpad's own selection: the index is not touched until you
   commit, and then only the checked files are committed

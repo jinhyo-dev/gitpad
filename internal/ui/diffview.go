@@ -31,6 +31,43 @@ type diffState struct {
 	// them and the current one is marked in the gutter.
 	blocks [][2]int // [start, end) line indices
 	cur    int
+	// hunks are the @@ sections (staging granularity in the commit workspace)
+	hunks   [][2]int // [start, end) line indices, start is the @@ line
+	curHunk int
+}
+
+// hunkRanges finds the @@ sections of a parsed diff.
+func hunkRanges(lines []diffLine) [][2]int {
+	var out [][2]int
+	for i, l := range lines {
+		if l.kind == '@' {
+			if n := len(out); n > 0 {
+				out[n-1][1] = i
+			}
+			out = append(out, [2]int{i, len(lines)})
+		}
+	}
+	return out
+}
+
+// hunkAt returns the hunk index containing line i (-1 when none).
+func (d *diffState) hunkAt(i int) int {
+	for h, r := range d.hunks {
+		if i >= r[0] && i < r[1] {
+			return h
+		}
+	}
+	return -1
+}
+
+// diffJumpHunk moves the current hunk (commit workspace navigation).
+func (m *Model) diffJumpHunk(dir int) {
+	d := m.diff
+	if d == nil || len(d.hunks) == 0 {
+		return
+	}
+	d.curHunk = clamp(d.curHunk+dir, 0, len(d.hunks)-1)
+	d.scroll = clamp(d.hunks[d.curHunk][0], 0, m.diffMaxScroll())
 }
 
 // changeBlocks finds runs of +/- lines.
@@ -145,6 +182,7 @@ func (m *Model) renderDiff(w, h int) []string {
 	}
 	gutter := 5
 	w-- // one column for the current-block marker
+	staging := m.commitOpen && m.filesFor == "local"
 	end := minInt(len(d.lines), d.scroll+h)
 	for i := d.scroll; i < end; i++ {
 		l := d.lines[i]
@@ -152,7 +190,13 @@ func (m *Model) renderDiff(w, h int) []string {
 		var line string
 		switch l.kind {
 		case '@':
-			line = pad(theme.DiffHunk.Render(trunc(text, w)), w)
+			if staging {
+				h := d.hunkAt(i)
+				box := m.checkbox(m.hunkSelected(d.path, h))
+				line = pad(box+" "+theme.DiffHunk.Render(trunc(text, w-4)), w)
+			} else {
+				line = pad(theme.DiffHunk.Render(trunc(text, w)), w)
+			}
 		case 'h':
 			line = pad(theme.DiffMeta.Render(trunc(text, w)), w)
 		case '+':
@@ -168,7 +212,11 @@ func (m *Model) renderDiff(w, h int) []string {
 			line = pad(g+theme.Base.Render("  "+trunc(text, w-gutter*2-2)), w)
 		}
 		marker := " "
-		if d.inCurrentBlock(i) {
+		if staging {
+			if len(d.hunks) > 0 && d.hunkAt(i) == d.curHunk {
+				marker = theme.AccentB.Render("▎")
+			}
+		} else if d.inCurrentBlock(i) {
 			marker = theme.AccentB.Render("▎")
 		}
 		out = append(out, marker+line)
@@ -184,7 +232,16 @@ func (m *Model) diffTitle() string {
 	stats := lipgloss.NewStyle().Foreground(theme.Green).Render(fmt.Sprintf("+%d", d.stats[0])) + " " +
 		lipgloss.NewStyle().Foreground(theme.Red).Render(fmt.Sprintf("-%d", d.stats[1]))
 	pos := ""
-	if len(d.blocks) > 0 {
+	switch {
+	case m.commitOpen && m.filesFor == "local" && len(d.hunks) > 0:
+		sel := 0
+		for h := range d.hunks {
+			if m.hunkSelected(d.path, h) {
+				sel++
+			}
+		}
+		pos = theme.DimSt.Render(fmt.Sprintf("  hunk %d/%d · %d checked", d.curHunk+1, len(d.hunks), sel))
+	case len(d.blocks) > 0:
 		pos = theme.DimSt.Render(fmt.Sprintf("  change %d/%d", d.cur+1, len(d.blocks)))
 	}
 	return "Diff · " + d.path + "  " + stats + pos

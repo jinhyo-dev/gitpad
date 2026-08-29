@@ -305,7 +305,7 @@ func (m *Model) renderStatusBar() string {
 	case m.commitOpen && m.commit != nil && m.commit.focus == cfMessage:
 		hints = keyHints(keyLabel("ctrl+s"), "commit", keyLabel("ctrl+p"), "commit & push", "↑", "history", "tab", "buttons", "esc", "files")
 	case m.commitOpen && m.commit != nil && m.commit.focus == cfDiff:
-		hints = keyHints("↑↓", "next/prev change", "shift+↑↓", "line", "n/p", "next/prev file", "←/esc", "files", "1 2 3", "pane")
+		hints = keyHints("space", "check hunk", "a", "whole file", "↑↓", "hunk", "n/p", "file", "shift+↑↓", "line", "←/esc", "files")
 	case m.commitOpen:
 		hints = keyHints("enter", "check", "a", "check all", "tab", "message", "→", "diff", "1 2 3", "pane", "d", "discard", keyLabel("ctrl+s"), "commit", "esc", "back")
 	}
@@ -332,7 +332,7 @@ func (m *Model) renderHelp() string {
 		{"Log", []row{{"enter / m / right-click", "commit actions"}, {"✓ ✗ ◌", "CI status (GitHub, via gh token)"}, {"/", "search message, author or hash"}, {"↑ at top", "jump to the search bar"}, {"→ / enter (filter bar)", "branch picker · esc clears"}, {"A", "all branches ↔ current"}, {"y", "copy hash"}, {"esc", "clear filters"}}},
 		{"Branches", []row{{"enter / m", "branch actions"}, {"c", "checkout"}, {"s", "show branch in log"}, {"d", "delete"}, {"f / p / P", "fetch / pull / push"}}},
 		{"Changes", []row{{"enter", "open diff"}, {"↑ ↓ (in diff)", "next / previous change block"}, {"shift+↑ ↓", "scroll one line"}, {"n / p", "next / prev file (in diff)"}, {"space / a", "check file / all (local)"}, {"c / C", "commit workspace"}, {"d", "discard (local)"}, {"H", "file history in log"}}},
-		{"Commit & Push", []row{{keyLabel("ctrl+s"), "commit selected files"}, {keyLabel("ctrl+p"), "commit & push"}, {"↑ (in message)", "previous messages"}, {"P", "push dialog"}, {"p", "pull (merge / rebase / fetch)"}}},
+		{"Commit & Push", []row{{keyLabel("ctrl+s"), "commit selected files"}, {keyLabel("ctrl+p"), "commit & push"}, {"space (in diff)", "check / uncheck a hunk"}, {"↑ (in message)", "previous messages"}, {"P", "push dialog"}, {"p", "pull (merge / rebase / fetch)"}}},
 		{"Other", []row{{"v", "new version tag (patch / minor / major) and push it"}, {"`", "console (git commands)"}, {"r", "refresh"}, {"?", "this help"}, {"q", "quit"}}},
 	}
 	renderSection := func(s section) []string {

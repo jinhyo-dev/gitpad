@@ -384,15 +384,26 @@ func (m *Model) renderFileRow(n fnode, w int) string {
 	}
 	f := n.file
 	st := theme.Status(f.Status)
+	extra := ""
 	badge := st.Bold(true).Render(string(f.Status))
 	if f.Status == '?' {
 		badge = st.Render("?")
 	}
 	if local {
-		badge = m.checkbox(m.selected[f.Path]) + " " + badge
+		if set, partial := m.hunkSel[f.Path]; partial {
+			badge = lipgloss.NewStyle().Foreground(theme.Yellow).Bold(true).Render("[~]") + " " + badge
+			n := 0
+			for _, on := range set {
+				if on {
+					n++
+				}
+			}
+			extra = theme.DimSt.Render(plural(n, "hunk", "hunks") + " ")
+		} else {
+			badge = m.checkbox(m.selected[f.Path]) + " " + badge
+		}
 	}
 	label := st.Render(trunc(n.label, w-10-len(indent)))
-	extra := ""
 	if f.Conflict {
 		extra = lipgloss.NewStyle().Foreground(theme.Red).Render("conflict ")
 	} else if f.OldPath != "" {

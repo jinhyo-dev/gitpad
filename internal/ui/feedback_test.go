@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -110,5 +111,71 @@ func TestVersionTagFlow(t *testing.T) {
 	}
 	if m.dialog != nil { // no remote in this repo → no push offer
 		t.Fatalf("no push offer expected without a remote, got %+v", m.dialog)
+	}
+}
+
+// Hunk staging: uncheck one hunk of a two-hunk file and commit → HEAD gets
+// only the other hunk, the working tree keeps both.
+func TestHunkStaging(t *testing.T) {
+	dir := makeRepo(t)
+	var b strings.Builder
+	for i := 1; i <= 40; i++ {
+		fmt.Fprintf(&b, "line %d\n", i)
+	}
+	base := b.String()
+	write(t, dir, "big.txt", base)
+	run(t, dir, "add", "big.txt")
+	run(t, dir, "commit", "-q", "-m", "add big.txt")
+	ls := strings.Split(strings.TrimRight(base, "\n"), "\n")
+	ls[1], ls[37] = "TOP", "BOTTOM"
+	write(t, dir, "big.txt", strings.Join(ls, "\n")+"\n")
+
+	h := newHarness(t, dir, 150, 40)
+	m := h.m()
+	if !m.selected["big.txt"] {
+		t.Fatal("tracked change should start checked")
+	}
+	// Open the workspace, move the file cursor onto big.txt, focus the diff.
+	h.press("C")
+	for i, n := range h.m().fnodes {
+		if !n.isDir && n.file.Path == "big.txt" {
+			mm := h.m()
+			mm.fcur = i
+			h.model = mm
+		}
+	}
+	h.model = drain(h.model, keyMsg("3"), 0) // focus diff (loads big.txt's diff)
+	m = h.m()
+	if m.diff == nil || m.diff.path != "big.txt" || len(m.diff.hunks) != 2 {
+		t.Fatalf("expected a two-hunk diff for big.txt, got %+v", m.diff)
+	}
+	h.press(" ") // uncheck hunk 0 (cursor advances to hunk 1)
+	m = h.m()
+	if set := m.hunkSel["big.txt"]; set == nil || set[0] || !set[1] {
+		t.Fatalf("hunk 0 should be unchecked, hunk 1 checked: %+v", set)
+	}
+	if !strings.Contains(ansi.Strip(h.model.View()), "[~]") {
+		t.Fatal("partially checked file should show [~]")
+	}
+	// Uncheck the other dirty files so only big.txt is committed.
+	mm := h.m()
+	for _, f := range mm.status {
+		if f.Path != "big.txt" {
+			mm.setFileSelected(f.Path, false)
+		}
+	}
+	h.model = mm
+	h.press("2", "h", "u", "n", "k", "ctrl+s")
+	m = h.m()
+	head, _ := m.repo.Run("show", "HEAD:big.txt")
+	if strings.Contains(head, "TOP") || !strings.Contains(head, "BOTTOM") {
+		t.Fatalf("HEAD should contain only the second hunk:\n%s", head)
+	}
+	rest, _ := m.repo.Run("diff", "HEAD", "--", "big.txt")
+	if !strings.Contains(rest, "TOP") || strings.Contains(rest, "BOTTOM") {
+		t.Fatalf("remaining diff should be the first hunk only:\n%s", rest)
+	}
+	if _, partial := m.hunkSel["big.txt"]; partial {
+		t.Fatal("hunk selection should reset after the commit")
 	}
 }

@@ -148,11 +148,74 @@ func (m *Model) commitDiffLater() tea.Cmd {
 
 // ---- selection ---------------------------------------------------------
 
+// hunkSelected reports whether hunk h of path goes into the next commit.
+func (m *Model) hunkSelected(path string, h int) bool {
+	if set, ok := m.hunkSel[path]; ok {
+		return set[h]
+	}
+	return m.selected[path]
+}
+
+// hunkTotal is the hunk count of the diff currently shown for path.
+func (m *Model) hunkTotal(path string) int {
+	if m.diff != nil && m.diff.path == path {
+		return len(m.diff.hunks)
+	}
+	return 0
+}
+
+// toggleHunk flips one hunk; the file checkbox follows (all → [x], none →
+// [ ], otherwise [~]).
+func (m *Model) toggleHunk(path string, h int, untracked bool) {
+	total := m.hunkTotal(path)
+	if untracked || total <= 1 {
+		m.selected[path] = !m.selected[path]
+		delete(m.hunkSel, path)
+		return
+	}
+	set, ok := m.hunkSel[path]
+	if !ok {
+		set = map[int]bool{}
+		if m.selected[path] {
+			for i := 0; i < total; i++ {
+				set[i] = true
+			}
+		}
+	}
+	set[h] = !set[h]
+	n := 0
+	for i := 0; i < total; i++ {
+		if set[i] {
+			n++
+		}
+	}
+	switch n {
+	case 0:
+		m.selected[path] = false
+		delete(m.hunkSel, path)
+	case total:
+		m.selected[path] = true
+		delete(m.hunkSel, path)
+	default:
+		m.selected[path] = true
+		m.hunkSel[path] = set
+	}
+}
+
+// setFileSelected checks/unchecks a whole file, dropping any hunk choice.
+func (m *Model) setFileSelected(path string, on bool) {
+	m.selected[path] = on
+	delete(m.hunkSel, path)
+}
+
 // syncSelection keeps the checkbox map aligned with the working tree:
 // tracked changes are checked by default, unversioned files are not.
 func (m *Model) syncSelection() {
 	if m.selected == nil {
 		m.selected = map[string]bool{}
+	}
+	if m.hunkSel == nil {
+		m.hunkSel = map[string]map[int]bool{}
 	}
 	present := map[string]bool{}
 	for _, f := range m.status {
@@ -164,6 +227,7 @@ func (m *Model) syncSelection() {
 	for p := range m.selected {
 		if !present[p] {
 			delete(m.selected, p)
+			delete(m.hunkSel, p)
 		}
 	}
 }
@@ -206,7 +270,7 @@ func (m *Model) nodePaths(n *fnode) []string {
 // toggleNodeSelection toggles a file, or every file below a group/dir.
 func (m *Model) toggleNodeSelection(n *fnode) {
 	if !n.isDir {
-		m.selected[n.file.Path] = !m.selected[n.file.Path]
+		m.setFileSelected(n.file.Path, !m.selected[n.file.Path])
 		return
 	}
 	paths := m.nodePaths(n)
@@ -218,7 +282,7 @@ func (m *Model) toggleNodeSelection(n *fnode) {
 		}
 	}
 	for _, p := range paths {
-		m.selected[p] = !all
+		m.setFileSelected(p, !all)
 	}
 }
 
@@ -231,7 +295,7 @@ func (m *Model) toggleAllSelection() {
 		}
 	}
 	for _, f := range m.status {
-		m.selected[f.Path] = !all
+		m.setFileSelected(f.Path, !all)
 	}
 }
 
@@ -364,11 +428,7 @@ func (m *Model) commitKey(k tea.KeyMsg) tea.Cmd {
 		// Enter (or space) checks / unchecks; on a folder or group it
 		// toggles everything below it.
 		if n := m.selectedFileNode(); n != nil {
-			if n.isDir {
-				m.toggleNodeSelection(n)
-			} else {
-				m.selected[n.file.Path] = !m.selected[n.file.Path]
-			}
+			m.toggleNodeSelection(n)
 		}
 		return nil
 	case "left":
@@ -404,7 +464,8 @@ func (m *Model) commitKey(k tea.KeyMsg) tea.Cmd {
 	return nil
 }
 
-// commitDiffKey scrolls the diff preview; ← / esc return to the files.
+// commitDiffKey drives the diff preview: hunks are the unit of navigation
+// and staging; ← / esc return to the files.
 func (m *Model) commitDiffKey(key string) tea.Cmd {
 	switch key {
 	case "esc", "left", "h":
@@ -422,16 +483,26 @@ func (m *Model) commitDiffKey(key string) tea.Cmd {
 	}
 	h := m.diffRect.h
 	d := m.diff
+	file := d.file
 	switch key {
+	case " ", "enter":
+		m.toggleHunk(file.Path, d.curHunk, file.Status == '?')
+		if len(d.hunks) > 1 && d.curHunk < len(d.hunks)-1 {
+			m.diffJumpHunk(1) // step to the next hunk like git add -p
+		}
+		return nil
+	case "a":
+		m.setFileSelected(file.Path, !m.selected[file.Path])
+		return nil
 	case "j", "down":
-		m.diffJump(1)
+		m.diffJumpHunk(1)
 	case "k", "up":
-		m.diffJump(-1)
+		m.diffJumpHunk(-1)
 	case "shift+down", "ctrl+e":
 		d.scroll = minInt(d.scroll+1, m.diffMaxScroll())
 	case "shift+up", "ctrl+y":
 		d.scroll = maxInt(d.scroll-1, 0)
-	case "ctrl+d", "pgdown", " ":
+	case "ctrl+d", "pgdown":
 		d.scroll = minInt(d.scroll+h/2, m.diffMaxScroll())
 	case "ctrl+u", "pgup":
 		d.scroll = maxInt(d.scroll-h/2, 0)
@@ -507,6 +578,17 @@ func (m *Model) commitMouse(msg tea.MouseMsg) tea.Cmd {
 		}
 		return nil
 	}
+	if msg.Action == tea.MouseActionPress && msg.Button == tea.MouseButtonLeft && m.diffRect.contains(x, y) && m.diff != nil {
+		// Click a hunk header to check / uncheck that hunk.
+		line := m.diff.scroll + y - m.diffRect.y
+		if h := m.diff.hunkAt(line); h >= 0 {
+			m.diff.curHunk = h
+			if line < len(m.diff.lines) && m.diff.lines[line].kind == '@' {
+				m.toggleHunk(m.diff.path, h, m.diff.file.Status == '?')
+			}
+		}
+		return m.commitSetFocus(cfDiff)
+	}
 	if msg.Action != tea.MouseActionPress {
 		return nil
 	}
@@ -577,8 +659,26 @@ func (m *Model) doCommit(push bool) tea.Cmd {
 	if push {
 		label = "Commit & Push"
 	}
+	var sel []git.Selection
+	for _, f := range files {
+		s := git.Selection{Path: f.Path, OldPath: f.OldPath, Untracked: f.Status == '?'}
+		if set, ok := m.hunkSel[f.Path]; ok {
+			for h := range set {
+				if set[h] {
+					s.Hunks = append(s.Hunks, h)
+				}
+			}
+			if s.Hunks == nil {
+				s.Hunks = []int{}
+			}
+		}
+		sel = append(sel, s)
+	}
 	repo := m.repo
-	return m.actionThen(label, func() error { return repo.CommitPaths(msg, files) }, func(m *Model) tea.Cmd {
+	return m.actionThen(label, func() error { return repo.CommitSelection(msg, sel) }, func(m *Model) tea.Cmd {
+		for _, s := range sel {
+			delete(m.hunkSel, s.Path) // hunk indices are stale once committed
+		}
 		c.msg.Reset()
 		c.histIdx, c.draft = -1, ""
 		c.history = append([]string{msg}, c.history...)

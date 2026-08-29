@@ -86,7 +86,8 @@ type Model struct {
 	diffRect rect
 
 	// commit workspace & push dialog
-	selected   map[string]bool // commit checkboxes, keyed by path
+	selected   map[string]bool         // commit checkboxes, keyed by path
+	hunkSel    map[string]map[int]bool // partial files: selected hunk indices (absent = whole file)
 	commit     *commitState
 	commitOpen bool
 	push       *pushState
