@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -340,5 +341,61 @@ func TestUndo(t *testing.T) {
 	h.press("u", "enter")
 	if m := h.m(); m.info.HeadHash != head {
 		t.Fatalf("undo should restore HEAD %s, got %s (toast=%+v)", head[:8], m.info.HeadHash[:8], m.toast)
+	}
+}
+
+// Conflict resolution: a conflicting merge is resolved block by block and
+// continued from the workspace.
+func TestConflictWorkspace(t *testing.T) {
+	dir := t.TempDir()
+	run(t, dir, "init", "-q", "-b", "main")
+	write(t, dir, "f.txt", "one\ntwo\nthree\n")
+	run(t, dir, "add", ".")
+	run(t, dir, "commit", "-q", "-m", "base")
+	run(t, dir, "checkout", "-q", "-b", "feature")
+	write(t, dir, "f.txt", "one\nTHEIRS\nthree\n")
+	run(t, dir, "commit", "-q", "-am", "theirs")
+	run(t, dir, "checkout", "-q", "main")
+	write(t, dir, "f.txt", "one\nOURS\nthree\n")
+	run(t, dir, "commit", "-q", "-am", "ours")
+	cmd := exec.Command("git", "merge", "feature")
+	cmd.Dir = dir
+	_ = cmd.Run() // conflicts on purpose
+
+	h := newHarness(t, dir, 150, 40)
+	m := h.m()
+	if m.info.State != "merging" || !(&m).hasConflicts() {
+		t.Fatalf("expected a merging repo with conflicts: state=%q status=%+v", m.info.State, m.status)
+	}
+	if m.toast == nil || !strings.Contains(m.toast.text, "conflicted file") {
+		t.Fatalf("conflicts should be announced, toast=%+v", m.toast)
+	}
+	h.press("x")
+	m = h.m()
+	if !m.conflictOpen || m.conflict == nil || len(m.conflict.blocks) != 1 {
+		t.Fatalf("workspace should open with one conflict: %+v", m.conflict)
+	}
+	h.check("conflict workspace")
+	view := ansi.Strip(h.model.View())
+	if !strings.Contains(view, "◀ ours") || !strings.Contains(view, "▶ theirs") {
+		t.Fatal("conflict headers should be rendered")
+	}
+	h.press("ctrl+s") // unresolved → refused
+	if h.m().conflict == nil || h.m().toast == nil || !strings.Contains(h.m().toast.text, "unresolved") {
+		t.Fatalf("saving with unresolved blocks must be refused: %+v", h.m().toast)
+	}
+	h.press("b", "ctrl+s") // keep both, save → all resolved → continue offer
+	m = h.m()
+	if m.dialog == nil || !strings.Contains(m.dialog.title, "All conflicts resolved") {
+		t.Fatalf("expected the continue offer, dialog=%+v conflictOpen=%v", m.dialog, m.conflictOpen)
+	}
+	h.press("enter")
+	m = h.m()
+	if m.info.State != "" {
+		t.Fatalf("merge should be continued, state=%q toast=%+v", m.info.State, m.toast)
+	}
+	content, _ := m.repo.Run("show", "HEAD:f.txt")
+	if content != "one\nOURS\nTHEIRS\nthree\n" {
+		t.Fatalf("merged file content: %q", content)
 	}
 }

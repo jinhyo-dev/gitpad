@@ -36,6 +36,9 @@ func (m *Model) commandPalette() tea.Cmd {
 	if m.hasFilter() {
 		add("Clear filters", "esc", func(m *Model) tea.Cmd { m.logOpts = defaultLogOptions(); return m.applyFilter() })
 	}
+	if m.hasConflicts() {
+		add("Resolve conflicts…", "x", func(m *Model) tea.Cmd { return m.openConflicts("") })
+	}
 	if n := len(m.undo); n > 0 {
 		add("Undo: "+m.undo[n-1].label, "u", func(m *Model) tea.Cmd { return m.undoLast() })
 	}

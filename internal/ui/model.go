@@ -86,14 +86,17 @@ type Model struct {
 	diffRect rect
 
 	// commit workspace & push dialog
-	selected   map[string]bool         // commit checkboxes, keyed by path
-	hunkSel    map[string]map[int]bool // partial files: selected hunk indices (absent = whole file)
-	commit     *commitState
-	commitOpen bool
-	push       *pushState
-	lastPull   string // merge | rebase | fetch
-	rebase     *rebaseState
-	rebaseOpen bool
+	selected          map[string]bool         // commit checkboxes, keyed by path
+	hunkSel           map[string]map[int]bool // partial files: selected hunk indices (absent = whole file)
+	commit            *commitState
+	commitOpen        bool
+	push              *pushState
+	lastPull          string // merge | rebase | fetch
+	rebase            *rebaseState
+	rebaseOpen        bool
+	conflict          *conflictState
+	conflictOpen      bool
+	conflictAnnounced bool
 
 	// undo stack of HEAD-changing operations (see undo.go); nextUndo lets an
 	// action describe a non-HEAD undo (branch / tag re-creation) up front

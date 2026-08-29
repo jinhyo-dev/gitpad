@@ -437,6 +437,9 @@ func (m *Model) menuForLocal() *menu {
 	}
 	if m.info.State != "" {
 		state := m.info.State
+		if m.hasConflicts() {
+			items = append([]menuItem{{label: "Resolve conflicts…", key: "x", run: func(m *Model) tea.Cmd { return m.openConflicts("") }}}, items...)
+		}
 		items = append([]menuItem{
 			{label: "Continue " + state, run: func(m *Model) tea.Cmd {
 				return m.action("Continue", func() error { return m.repo.ContinueState(state) })

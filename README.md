@@ -106,6 +106,7 @@ the detection.
 | `H` | show the file's history in the log |
 | `i` | interactive rebase from the selected commit |
 | `u` | undo the last history-changing operation |
+| `x` | resolve merge conflicts |
 | `y` | copy hash / path / name |
 | `f` `p` `P` | fetch · pull chooser · push dialog |
 | `v` | new version tag (patch / minor / major) + push |
@@ -165,6 +166,16 @@ reorder, `enter` opens the row menu, `ctrl+s` starts after a confirmation.
 Rewords are applied without opening an editor; conflicts or `edit` stops show
 the REBASING badge with *Continue* / *Abort* in the changes menu, and the old
 history stays reachable as `ORIG_HEAD`.
+
+### Conflict resolution (`x`)
+
+When a merge, rebase, cherry-pick or revert stops on conflicts, gitpad says
+so and `x` (or `enter` on a conflicted file) opens the resolver: the file with
+every `<<<<<<<` block highlighted — ours in blue, theirs in purple, the
+diff3 base when present. Per block, `o` keeps ours, `t` theirs, `b` / `B` both
+in either order, `O` / `T` decide every block at once; `↑↓` move between
+blocks. `ctrl+s` writes the file and marks it resolved, moves on to the next
+conflicted file, and offers to continue the operation once all are done.
 
 ### Undo (`u`)
 

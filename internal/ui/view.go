@@ -213,6 +213,14 @@ func (m *Model) renderPanels() string {
 		return lipgloss.JoinHorizontal(lipgloss.Top, branches, center, right)
 	}
 
+	if m.conflictOpen && m.conflict != nil {
+		center := frame(m.conflictTitle(), "", m.renderConflict(lg.w, lg.h), lg.w, lg.h, true)
+		files := frame("Conflicted files", fmt.Sprintf("%d", len(m.conflict.files)), m.renderConflictFiles(ch.w), ch.w, ch.h, false)
+		help := frame("Keys", "", m.renderConflictHelp(dt.w), dt.w, dt.h, false)
+		right := lipgloss.JoinVertical(lipgloss.Left, files, help)
+		return lipgloss.JoinHorizontal(lipgloss.Top, branches, center, right)
+	}
+
 	var center string
 	switch {
 	case m.rebaseOpen && m.rebase != nil:
@@ -295,7 +303,9 @@ func (m *Model) renderStatusBar() string {
 	case m.focus == PanelLog:
 		hints = keyHints(keyLabel("ctrl+k"), "palette", "enter", "actions", "c", "commit", "i", "rebase", "u", "undo", "P", "push", "p", "pull", "f", "fetch", "v", "version tag", "/", "search", "A", "all/head", "y", "copy hash", "←→", "section")
 	default:
-		if m.filesFor == "local" {
+		if m.filesFor == "local" && m.hasConflicts() {
+			hints = keyHints("x", "resolve conflicts", "enter", "resolve file", keyLabel("ctrl+k"), "palette", "c", "commit", "←→", "fold/section")
+		} else if m.filesFor == "local" {
 			hints = keyHints(keyLabel("ctrl+k"), "palette", "space", "check", "c", "commit", "P", "push", "enter", "diff", "d", "discard", "H", "history", "←→", "fold/section")
 		} else {
 			hints = keyHints(keyLabel("ctrl+k"), "palette", "enter", "diff", "c", "commit", "H", "history", "y", "copy path", "space", "fold", "←→", "fold/section")
@@ -308,6 +318,8 @@ func (m *Model) renderStatusBar() string {
 		hints = keyHints(keyLabel("ctrl+s"), "commit", keyLabel("ctrl+p"), "commit & push", "↑", "history", "tab", "buttons", "esc", "files")
 	case m.rebaseOpen:
 		hints = keyHints("p r e s f d", "action", "⇧↑↓", "reorder", "enter", "menu", keyLabel("ctrl+s"), "start", "esc", "cancel")
+	case m.conflictOpen:
+		hints = keyHints("o", "ours", "t", "theirs", "b", "both", "↑↓", "conflict", "n/p", "file", keyLabel("ctrl+s"), "save & resolve", "esc", "back")
 	case m.commitOpen && m.commit != nil && m.commit.focus == cfDiff:
 		hints = keyHints("space", "check hunk", "a", "whole file", "↑↓", "hunk", "n/p", "file", "shift+↑↓", "line", "←/esc", "files")
 	case m.commitOpen:
@@ -338,7 +350,7 @@ func (m *Model) renderHelp() string {
 		{"Branches", []row{{"enter / m", "branch actions"}, {"c", "checkout"}, {"s", "show branch in log"}, {"d", "delete"}, {"f / p / P", "fetch / pull / push"}}},
 		{"Changes", []row{{"enter", "open diff"}, {"↑ ↓ (in diff)", "next / previous change block"}, {"shift+↑ ↓", "scroll one line"}, {"n / p", "next / prev file (in diff)"}, {"space / a", "check file / all (local)"}, {"c / C", "commit workspace"}, {"d", "discard (local)"}, {"H", "file history in log"}}},
 		{"Commit & Push", []row{{keyLabel("ctrl+s"), "commit selected files"}, {keyLabel("ctrl+p"), "commit & push"}, {"space (in diff)", "check / uncheck a hunk"}, {"↑ (in message)", "previous messages"}, {"P", "push dialog"}, {"p", "pull (merge / rebase / fetch)"}}},
-		{"Other", []row{{keyLabel("ctrl+k"), "command palette — search every action"}, {"u", "undo the last commit / rebase / reset / checkout / deletion"}, {"v", "new version tag (patch / minor / major) and push it"}, {"`", "console (git commands)"}, {"r", "refresh"}, {"?", "this help"}, {"q", "quit"}}},
+		{"Other", []row{{keyLabel("ctrl+k"), "command palette — search every action"}, {"x", "resolve merge conflicts (ours / theirs / both per block)"}, {"u", "undo the last commit / rebase / reset / checkout / deletion"}, {"v", "new version tag (patch / minor / major) and push it"}, {"`", "console (git commands)"}, {"r", "refresh"}, {"?", "this help"}, {"q", "quit"}}},
 	}
 	renderSection := func(s section) []string {
 		lines := []string{theme.Bold.Render(s.title)}

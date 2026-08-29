@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -125,6 +126,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		mm.onPushData(msg)
 	case rebasePlanMsg:
 		cmd = mm.onRebasePlan(msg)
+	case conflictFilesMsg:
+		cmd = mm.onConflictFiles(msg)
+	case conflictFileMsg:
+		mm.onConflictFile(msg)
 	case toastClearMsg:
 		if mm.toast != nil && mm.toast.id == msg.id {
 			mm.toast = nil
@@ -200,6 +205,17 @@ func (m *Model) onData(msg dataMsg) tea.Cmd {
 	if m.rebaseOpen && m.info.State != "" {
 		m.closeRebase()
 	}
+	if m.conflictOpen && !m.hasConflicts() && m.info.State == "" {
+		m.closeConflicts()
+	}
+	var announce tea.Cmd
+	if n := m.conflictCount(); n > 0 && m.info.State != "" && !m.conflictOpen && !m.conflictAnnounced {
+		m.conflictAnnounced = true
+		announce = m.showToast(fmt.Sprintf("%s — press x to resolve", plural(n, "conflicted file", "conflicted files")), 2)
+	}
+	if m.conflictCount() == 0 {
+		m.conflictAnnounced = false
+	}
 	m.logTruncated = len(msg.commits) >= m.logOpts.Limit
 
 	m.hashIdx = make(map[string]int, len(m.commits))
@@ -222,7 +238,7 @@ func (m *Model) onData(msg dataMsg) tea.Cmd {
 		}
 	}
 	m.lcur = clamp(m.lcur, 0, maxInt(0, m.logLen()-1))
-	return m.refreshSelection(true)
+	return tea.Batch(m.refreshSelection(true), announce)
 }
 
 func (m *Model) onFiles(msg filesMsg) tea.Cmd {
@@ -305,6 +321,11 @@ func (m *Model) handleKey(k tea.KeyMsg) tea.Cmd {
 			return m.commandPalette()
 		}
 		return m.rebaseKey(k)
+	case m.conflictOpen:
+		if key == "ctrl+k" {
+			return m.commandPalette()
+		}
+		return m.conflictKey(k)
 	case m.commitOpen:
 		return m.commitKey(k)
 	}
@@ -316,6 +337,10 @@ func (m *Model) handleKey(k tea.KeyMsg) tea.Cmd {
 	case "u":
 		if m.focus != PanelChanges || m.filesFor != "local" {
 			return m.undoLast()
+		}
+	case "x":
+		if m.hasConflicts() {
+			return m.openConflicts("")
 		}
 	case "q":
 		if m.diff != nil {
@@ -634,6 +659,9 @@ func (m *Model) filesKey(key string) tea.Cmd {
 			m.fcollapsed[n.key] = !m.fcollapsed[n.key]
 			m.rebuildFileTree()
 			return nil
+		}
+		if n.file.Conflict && m.filesFor == "local" {
+			return m.openConflicts(n.file.Path)
 		}
 		if m.diff != nil && m.diff.path == n.file.Path {
 			m.diff = nil
@@ -1091,6 +1119,9 @@ func (m *Model) handleMouse(msg tea.MouseMsg) tea.Cmd {
 	}
 	if m.rebaseOpen && m.rects[PanelLog].contains(msg.X, msg.Y) {
 		return m.rebaseMouse(msg)
+	}
+	if m.conflictOpen && m.rects[PanelLog].contains(msg.X, msg.Y) {
+		return m.conflictMouse(msg)
 	}
 	if m.commitOpen && (m.rects[PanelLog].contains(msg.X, msg.Y) || m.diffRect.contains(msg.X, msg.Y)) {
 		return m.commitMouse(msg)
