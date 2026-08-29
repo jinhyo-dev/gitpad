@@ -147,6 +147,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			cmd = mm.loadAll(keep)
 		}
+	case openedMsg:
+		if msg.err != nil {
+			cmd = mm.showToast("Open failed: "+msg.err.Error(), 2)
+		} else {
+			cmd = mm.showToast(msg.what, 0)
+		}
 	case clipboardMsg:
 		if msg.err != nil {
 			cmd = mm.showToast("copy failed: "+msg.err.Error(), 2)
@@ -706,6 +712,10 @@ func (m *Model) filesKey(key string) tea.Cmd {
 	case "y":
 		if !n.isDir {
 			return copyToClipboard("path", n.file.Path)
+		}
+	case "o", "O":
+		if !n.isDir {
+			return m.previewFile(*n.file, key == "O")
 		}
 	case "H":
 		if !n.isDir {

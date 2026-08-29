@@ -459,6 +459,11 @@ func (m *Model) commitKey(k tea.KeyMsg) tea.Cmd {
 			return copyToClipboard("path", n.file.Path)
 		}
 		return nil
+	case "o", "O":
+		if n := m.selectedFileNode(); n != nil && !n.isDir {
+			return m.previewFile(*n.file, key == "O")
+		}
+		return nil
 	}
 	filesRect, _, _ := m.commitLayout()
 	prev := m.fcur

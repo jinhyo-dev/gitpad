@@ -101,3 +101,24 @@ func TestCommitSelectionPartial(t *testing.T) {
 		t.Fatalf("index not restored:\n%s\nvs\n%s", before, after)
 	}
 }
+
+func TestExtractBlobAndWorktreePath(t *testing.T) {
+	dir := t.TempDir()
+	run(t, dir, "init", "-q", "-b", "main")
+	os.WriteFile(filepath.Join(dir, "img.png"), []byte("\x89PNG old"), 0o644)
+	run(t, dir, "add", ".")
+	run(t, dir, "commit", "-q", "-m", "add image")
+	head := strings.TrimSpace(run(t, dir, "rev-parse", "HEAD"))
+	os.WriteFile(filepath.Join(dir, "img.png"), []byte("\x89PNG new"), 0o644)
+	r, _ := Open(dir)
+	p, err := r.ExtractBlob(head, "img.png")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := os.ReadFile(p); string(b) != "\x89PNG old" || filepath.Base(p) != "img.png" {
+		t.Fatalf("extracted blob wrong: %q at %s", b, p)
+	}
+	if _, err := r.WorktreePath("missing.txt"); err == nil {
+		t.Fatal("missing file should error")
+	}
+}

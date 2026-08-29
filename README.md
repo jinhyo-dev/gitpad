@@ -155,6 +155,7 @@ the detection.
 | `s` | show branch in log (branches) |
 | `d` | delete branch/tag (branches) · discard file (local files) |
 | `H` | show the file's history in the log |
+| `o` / `O` | open the file with the OS default app (images, PDFs, docs — a commit's version is extracted) / reveal it in the file manager |
 | `i` | interactive rebase from the selected commit |
 | `u` | undo the last history-changing operation |
 | `x` | resolve merge conflicts |

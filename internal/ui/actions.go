@@ -2,8 +2,6 @@ package ui
 
 import (
 	"fmt"
-	"os/exec"
-	"runtime"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -325,16 +323,7 @@ func (m *Model) resetMenu(hash, label string) *menu {
 // openBrowser opens a URL with the platform's default handler.
 func openBrowser(url string) tea.Cmd {
 	return func() tea.Msg {
-		var cmd *exec.Cmd
-		switch runtime.GOOS {
-		case "darwin":
-			cmd = exec.Command("open", url)
-		case "windows":
-			cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
-		default:
-			cmd = exec.Command("xdg-open", url)
-		}
-		if err := cmd.Start(); err != nil {
+		if err := openWithDefaultApp(url).Start(); err != nil {
 			return clipboardMsg{err: err, what: "url"}
 		}
 		return nil
@@ -549,6 +538,8 @@ func (m *Model) menuForFile(n *fnode) *menu {
 	f := *n.file
 	items := []menuItem{
 		{label: "Show diff", key: "enter", run: func(m *Model) tea.Cmd { return m.openDiff(f) }},
+		{label: "Open with default app", key: "o", run: func(m *Model) tea.Cmd { return m.previewFile(f, false) }},
+		{label: "Reveal in file manager", key: "O", run: func(m *Model) tea.Cmd { return m.previewFile(f, true) }},
 		{label: "Show history in log", key: "H", run: func(m *Model) tea.Cmd { return m.showPathHistory(f.Path) }},
 		{label: "Copy path", key: "y", run: func(m *Model) tea.Cmd { return copyToClipboard("path", f.Path) }},
 	}

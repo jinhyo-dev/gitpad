@@ -306,9 +306,9 @@ func (m *Model) renderStatusBar() string {
 		if m.filesFor == "local" && m.hasConflicts() {
 			hints = keyHints("x", "resolve conflicts", "enter", "resolve file", keyLabel("ctrl+k"), "palette", "c", "commit", "←→", "fold/section")
 		} else if m.filesFor == "local" {
-			hints = keyHints(keyLabel("ctrl+k"), "palette", "space", "check", "c", "commit", "P", "push", "enter", "diff", "d", "discard", "H", "history", "←→", "fold/section")
+			hints = keyHints(keyLabel("ctrl+k"), "palette", "space", "check", "c", "commit", "P", "push", "enter", "diff", "o", "open", "O", "reveal", "d", "discard", "H", "history", "←→", "fold/section")
 		} else {
-			hints = keyHints(keyLabel("ctrl+k"), "palette", "enter", "diff", "c", "commit", "H", "history", "y", "copy path", "space", "fold", "←→", "fold/section")
+			hints = keyHints(keyLabel("ctrl+k"), "palette", "enter", "diff", "o", "open", "O", "reveal", "c", "commit", "H", "history", "y", "copy path", "space", "fold", "←→", "fold/section")
 		}
 	}
 	switch {
@@ -348,7 +348,7 @@ func (m *Model) renderHelp() string {
 		{"Navigation", []row{{"tab / 1 2 3 / h l", "switch panel"}, {"j k ↑ ↓", "move"}, {"g / G", "top / bottom"}, {keyLabel("ctrl+d") + " / " + keyLabel("ctrl+u"), "half page"}, {"space", "fold / unfold tree"}, {"← →", "fold / unfold, then previous / next pane"}, {"mouse", "click · right-click · wheel"}}},
 		{"Log", []row{{"enter / m / right-click", "commit actions"}, {"i", "interactive rebase from this commit"}, {"✓ ✗ ◌", "CI status (GitHub, via gh token)"}, {"/", "search message, author or hash"}, {"↑ at top", "jump to the search bar"}, {"→ / enter (filter bar)", "branch picker · esc clears"}, {"A", "all branches ↔ current"}, {"y", "copy hash"}, {"esc", "clear filters"}}},
 		{"Branches", []row{{"enter / m", "branch actions"}, {"c", "checkout"}, {"s", "show branch in log"}, {"d", "delete"}, {"f / p / P", "fetch / pull / push"}}},
-		{"Changes", []row{{"enter", "open diff"}, {"↑ ↓ (in diff)", "next / previous change block"}, {"shift+↑ ↓", "scroll one line"}, {"n / p", "next / prev file (in diff)"}, {"space / a", "check file / all (local)"}, {"c / C", "commit workspace"}, {"d", "discard (local)"}, {"H", "file history in log"}}},
+		{"Changes", []row{{"enter", "open diff"}, {"o / O", "open with the default app / reveal in file manager"}, {"↑ ↓ (in diff)", "next / previous change block"}, {"shift+↑ ↓", "scroll one line"}, {"n / p", "next / prev file (in diff)"}, {"space / a", "check file / all (local)"}, {"c / C", "commit workspace"}, {"d", "discard (local)"}, {"H", "file history in log"}}},
 		{"Commit & Push", []row{{keyLabel("ctrl+s"), "commit selected files"}, {keyLabel("ctrl+p"), "commit & push"}, {"space (in diff)", "check / uncheck a hunk"}, {"↑ (in message)", "previous messages"}, {"P", "push dialog"}, {"p", "pull (merge / rebase / fetch)"}}},
 		{"Other", []row{{keyLabel("ctrl+k"), "command palette — search every action"}, {"x", "resolve merge conflicts (ours / theirs / both per block)"}, {"u", "undo the last commit / rebase / reset / checkout / deletion"}, {"v", "new version tag (patch / minor / major) and push it"}, {"`", "console (git commands)"}, {"r", "refresh"}, {"?", "this help"}, {"q", "quit"}}},
 	}
