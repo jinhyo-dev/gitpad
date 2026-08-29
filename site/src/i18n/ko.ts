@@ -30,6 +30,7 @@ export const ko: Dict = {
   nav: {
     about: "소개",
     features: "기능",
+    gallery: "동작 화면",
     demo: "데모",
     install: "설치",
     keys: "단축키",
@@ -106,6 +107,57 @@ export const ko: Dict = {
       },
     ],
   },
+  gallery: {
+    title: "동작 화면",
+    subtitle: "모든 기능을 가상의 저장소 위에서 녹화했습니다.",
+    items: [
+      {
+        id: "log",
+        title: "로그 · 그래프 · 브랜치",
+        body: "레인과 ref 칩이 있는 커밋 그래프, ahead/behind가 표시되는 브랜치 트리, 선택한 커밋의 변경 파일과 상세.",
+      },
+      {
+        id: "menu",
+        title: "컨텍스트 메뉴",
+        body: "커밋에서 Enter 또는 우클릭: 체크아웃, 체리픽, 리버트, 리셋(soft/mixed/hard), 새 브랜치·태그, 인터랙티브 리베이스.",
+      },
+      {
+        id: "commit",
+        title: "커밋 워크스페이스 & hunk 스테이징",
+        body: "파일 또는 개별 hunk를 체크하고, 메시지를 쓰고, 디프를 확인하며 커밋 — 나머지는 워킹트리에 그대로.",
+      },
+      {
+        id: "rebase",
+        title: "인터랙티브 리베이스",
+        body: "로그에서 pick · reword · edit · squash · fixup · drop · 순서 변경. reword는 에디터를 열지 않습니다.",
+      },
+      {
+        id: "conflicts",
+        title: "컨플릭트 해결",
+        body: "블록마다 ours / theirs / both를 고르고(버리는 쪽은 취소선), 저장하면 해결 표시 후 이어서 진행.",
+      },
+      {
+        id: "push",
+        title: "Push 다이얼로그",
+        body: "어떤 커밋이 올라가는지, 브랜치가 뒤처졌는지 경고, force-with-lease와 태그는 토글로.",
+      },
+      {
+        id: "palette",
+        title: "커맨드 팔레트",
+        body: "Ctrl+K로 현재 선택에 맞는 모든 액션을 나열 — 타이핑으로 좁히고 Enter로 실행.",
+      },
+      {
+        id: "undo",
+        title: "Undo",
+        body: "마지막 커밋·리베이스·리셋·체크아웃·삭제를 키 하나로 되돌립니다. 무엇을 할지 먼저 보여줍니다.",
+      },
+      {
+        id: "search",
+        title: "검색 & 브랜치 선택",
+        body: "메시지·작성자·해시를 한 검색창으로, 타이핑 필터가 되는 브랜치 선택기로 로그를 좁힙니다.",
+      },
+    ],
+  },
   install: {
     title: "한 줄로 설치",
     subtitle:
@@ -163,5 +215,6 @@ export const ko: Dict = {
     license: "MIT 라이선스",
     source: "GitHub 소스",
     lang: "Language: English",
+    copyright: "© 2026 jinhyo-dev. All rights reserved.",
   },
 };

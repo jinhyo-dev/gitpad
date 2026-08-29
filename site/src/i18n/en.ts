@@ -28,6 +28,7 @@ export const en = {
   nav: {
     about: "About",
     features: "Features",
+    gallery: "Gallery",
     demo: "Demo",
     install: "Install",
     keys: "Keys",
@@ -104,6 +105,57 @@ export const en = {
       },
     ],
   },
+  gallery: {
+    title: "See it in action",
+    subtitle: "Every feature, recorded on a fictional repository.",
+    items: [
+      {
+        id: "log",
+        title: "Log, graph & branches",
+        body: "Commit graph with lanes and ref chips, branch tree with ahead/behind, changed files and details for the selected commit.",
+      },
+      {
+        id: "menu",
+        title: "Context menus",
+        body: "Enter or right-click on a commit: checkout, cherry-pick, revert, reset (soft/mixed/hard), new branch or tag, interactive rebase.",
+      },
+      {
+        id: "commit",
+        title: "Commit workspace & hunk staging",
+        body: "Check files or individual hunks, write the message, preview the diff and commit — the rest stays in the working tree.",
+      },
+      {
+        id: "rebase",
+        title: "Interactive rebase",
+        body: "Pick, reword, edit, squash, fixup, drop and reorder from the log; rewords never open an editor.",
+      },
+      {
+        id: "conflicts",
+        title: "Conflict resolution",
+        body: "Ours, theirs or both per block, with the discarded side crossed out, then save, mark resolved and continue.",
+      },
+      {
+        id: "push",
+        title: "Push dialog",
+        body: "Exactly which commits will be pushed, a warning when the branch is behind, force-with-lease and tags as toggles.",
+      },
+      {
+        id: "palette",
+        title: "Command palette",
+        body: "Ctrl+K lists every action for the current selection — type to filter, Enter to run.",
+      },
+      {
+        id: "undo",
+        title: "Undo",
+        body: "One key walks back the last commit, rebase, reset, checkout or deletion, explaining what it will do first.",
+      },
+      {
+        id: "search",
+        title: "Search & branch picker",
+        body: "One box for messages, authors and hashes; a type-to-filter branch picker narrows the log.",
+      },
+    ],
+  },
   install: {
     title: "Install in one line",
     subtitle:
@@ -161,6 +213,7 @@ export const en = {
     license: "MIT licensed",
     source: "Source on GitHub",
     lang: "언어: 한국어",
+    copyright: "© 2026 jinhyo-dev. All rights reserved.",
   },
 } as const;
 

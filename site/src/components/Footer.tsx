@@ -33,6 +33,9 @@ export function Footer() {
             {t.footer.lang}
           </a>
         </span>
+        <div className="mx-auto mt-6 max-w-6xl px-5 text-xs text-dim sm:px-8">
+          {t.footer.copyright}
+        </div>
       </div>
     </footer>
   );

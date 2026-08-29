@@ -10,6 +10,7 @@ export function Header() {
   const links: [string, string][] = [
     ["#about", t.nav.about],
     ["#features", t.nav.features],
+    ["#gallery", t.nav.gallery],
     ["#demo", t.nav.demo],
     ["#install", t.nav.install],
     ["#keys", t.nav.keys],

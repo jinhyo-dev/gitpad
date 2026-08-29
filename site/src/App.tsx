@@ -4,6 +4,7 @@ import { Header } from "./components/Header";
 import { Hero } from "./components/Hero";
 import { Demo } from "./demo/Demo";
 import { About } from "./components/About";
+import { Gallery } from "./components/Gallery";
 import { Features } from "./components/Features";
 import { Install } from "./components/Install";
 import { Keys } from "./components/Keys";
@@ -32,6 +33,7 @@ export function App({ locale }: { locale: Locale }) {
           <Hero />
           <Demo />
           <About />
+          <Gallery />
           <Features />
           <Install />
           <Keys />
