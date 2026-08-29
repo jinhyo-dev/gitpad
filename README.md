@@ -89,6 +89,7 @@ the detection.
 
 | Key | Action |
 |---|---|
+| `ctrl+k` | command palette — type to find any action (global + selected commit / branch / file) |
 | `tab` `1` `2` `3` `h` `l` | switch pane |
 | `j` `k` `g` `G` `ctrl+d` `ctrl+u` | move / page |
 | `enter` `m` / right-click | context menu (commit, branch, file) |

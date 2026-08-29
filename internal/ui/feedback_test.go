@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/jinhyo-dev/gitpad/internal/git"
@@ -177,5 +178,44 @@ func TestHunkStaging(t *testing.T) {
 	}
 	if _, partial := m.hunkSel["big.txt"]; partial {
 		t.Fatal("hunk selection should reset after the commit")
+	}
+}
+
+func TestCommandPalette(t *testing.T) {
+	dir := makeRepo(t)
+	h := newHarness(t, dir, 150, 40)
+	h.press("j", "j") // a non-HEAD commit → cherry-pick is available
+	// Put the branch cursor on the "main" leaf so branch actions join too.
+	mm := h.m()
+	for i, n := range mm.bnodes {
+		if n.kind == bLeaf && n.branch != nil && n.branch.Name == "main" {
+			mm.bcur = i
+		}
+	}
+	h.model = mm
+	h.model = drain(h.model, tea.KeyMsg{Type: tea.KeyCtrlK}, 0)
+	m := h.m()
+	if m.menu == nil || !m.menu.filterable || m.menu.title != "Command palette" {
+		t.Fatalf("ctrl+k should open the palette: %+v", m.menu)
+	}
+	var labels []string
+	for _, it := range m.menu.items {
+		labels = append(labels, it.label)
+	}
+	joined := strings.Join(labels, "\n")
+	for _, want := range []string{"Push…", "Keyboard help", "› Cherry-pick", "› Reset main to here › Soft", "Branch main › Show in log", "File "} {
+		if !strings.Contains(joined, want) {
+			t.Errorf("palette missing %q in:\n%s", want, joined)
+		}
+	}
+	// Type to filter, Enter runs the action.
+	h.press("h", "e", "l", "p")
+	m = h.m()
+	if len(m.menu.items) != 1 || m.menu.items[0].label != "Keyboard help" {
+		t.Fatalf("filter should narrow to the help entry: %+v", m.menu.items)
+	}
+	h.press("enter")
+	if m := h.m(); m.menu != nil || !m.help {
+		t.Fatal("running the entry should open the help overlay")
 	}
 }

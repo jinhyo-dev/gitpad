@@ -141,7 +141,7 @@ func (m *Model) renderHeader() string {
 	} else {
 		tabLog = theme.TabActive
 	}
-	right := tabLog.Render("Log") + tabCon.Render("Console") + "  " + theme.KeyHint.Render("?") + theme.KeyLabel.Render(" help ")
+	right := tabLog.Render("Log") + tabCon.Render("Console") + "  " + theme.KeyHint.Render(keyLabel("ctrl+k")) + theme.KeyLabel.Render(" commands  ") + theme.KeyHint.Render("?") + theme.KeyLabel.Render(" help ")
 	// Image logos occupy cells the width calculation cannot see.
 	return highlight(joinRow(" "+left, right, m.width-logoHidden()), theme.Surface)
 }
@@ -287,16 +287,16 @@ func (m *Model) renderStatusBar() string {
 	case m.console:
 		hints = keyHints("j/k", "scroll", "`", "back to log")
 	case m.focus == PanelBranches:
-		hints = keyHints("enter", "actions", "c", "checkout", "C", "commit", "P", "push", "p", "pull", "f", "fetch", "v", "version tag", "←→", "fold/section")
+		hints = keyHints(keyLabel("ctrl+k"), "palette", "enter", "actions", "c", "checkout", "C", "commit", "P", "push", "p", "pull", "f", "fetch", "v", "version tag", "←→", "fold/section")
 	case m.detailsFocus:
 		hints = keyHints("j/k", "scroll", "↑", "back to files", "esc", "back")
 	case m.focus == PanelLog:
-		hints = keyHints("enter", "actions", "c", "commit", "P", "push", "p", "pull", "f", "fetch", "v", "version tag", "/", "search", "A", "all/head", "y", "copy hash", "←→", "section")
+		hints = keyHints(keyLabel("ctrl+k"), "palette", "enter", "actions", "c", "commit", "P", "push", "p", "pull", "f", "fetch", "v", "version tag", "/", "search", "A", "all/head", "y", "copy hash", "←→", "section")
 	default:
 		if m.filesFor == "local" {
-			hints = keyHints("space", "check", "c", "commit", "P", "push", "enter", "diff", "d", "discard", "H", "history", "←→", "fold/section")
+			hints = keyHints(keyLabel("ctrl+k"), "palette", "space", "check", "c", "commit", "P", "push", "enter", "diff", "d", "discard", "H", "history", "←→", "fold/section")
 		} else {
-			hints = keyHints("enter", "diff", "c", "commit", "H", "history", "y", "copy path", "space", "fold", "←→", "fold/section")
+			hints = keyHints(keyLabel("ctrl+k"), "palette", "enter", "diff", "c", "commit", "H", "history", "y", "copy path", "space", "fold", "←→", "fold/section")
 		}
 	}
 	switch {
@@ -333,7 +333,7 @@ func (m *Model) renderHelp() string {
 		{"Branches", []row{{"enter / m", "branch actions"}, {"c", "checkout"}, {"s", "show branch in log"}, {"d", "delete"}, {"f / p / P", "fetch / pull / push"}}},
 		{"Changes", []row{{"enter", "open diff"}, {"↑ ↓ (in diff)", "next / previous change block"}, {"shift+↑ ↓", "scroll one line"}, {"n / p", "next / prev file (in diff)"}, {"space / a", "check file / all (local)"}, {"c / C", "commit workspace"}, {"d", "discard (local)"}, {"H", "file history in log"}}},
 		{"Commit & Push", []row{{keyLabel("ctrl+s"), "commit selected files"}, {keyLabel("ctrl+p"), "commit & push"}, {"space (in diff)", "check / uncheck a hunk"}, {"↑ (in message)", "previous messages"}, {"P", "push dialog"}, {"p", "pull (merge / rebase / fetch)"}}},
-		{"Other", []row{{"v", "new version tag (patch / minor / major) and push it"}, {"`", "console (git commands)"}, {"r", "refresh"}, {"?", "this help"}, {"q", "quit"}}},
+		{"Other", []row{{keyLabel("ctrl+k"), "command palette — search every action"}, {"v", "new version tag (patch / minor / major) and push it"}, {"`", "console (git commands)"}, {"r", "refresh"}, {"?", "this help"}, {"q", "quit"}}},
 	}
 	renderSection := func(s section) []string {
 		lines := []string{theme.Bold.Render(s.title)}

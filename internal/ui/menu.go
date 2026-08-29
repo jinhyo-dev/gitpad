@@ -130,6 +130,9 @@ func (mn *menu) layout() {
 	}
 	if mn.filterable {
 		lw = maxInt(lw, 28)
+		if mn.title == "Command palette" {
+			lw = maxInt(lw, 48)
+		}
 	}
 	mn.w = lw + kw + 3 + 4 // gap + border/padding
 	mn.h = mn.rows() + 2

@@ -382,6 +382,10 @@ func (m *Model) commitKey(k tea.KeyMsg) tea.Cmd {
 		return m.doCommit(false)
 	case "ctrl+p":
 		return m.doCommit(true)
+	case "ctrl+k":
+		if c.focus != cfMessage {
+			return m.commandPalette()
+		}
 	case "tab":
 		return m.commitSetFocus((c.focus + 1) % cfCount)
 	case "shift+tab":

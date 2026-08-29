@@ -300,6 +300,8 @@ func (m *Model) handleKey(k tea.KeyMsg) tea.Cmd {
 
 	// Global keys.
 	switch key {
+	case "ctrl+k":
+		return m.commandPalette()
 	case "q":
 		if m.diff != nil {
 			m.diff = nil
@@ -1223,7 +1225,7 @@ func (m *Model) scrollAt(x, y, delta int) tea.Cmd {
 
 func (m *Model) headerClick(x int) tea.Cmd {
 	// Tabs live at the right edge: "[ Log ][ Console ]  ? help "
-	tail := width(theme.TabActive.Render("Log")) + width(theme.TabInactive.Render("Console")) + 2 + width(theme.KeyHint.Render("?")+theme.KeyLabel.Render(" help "))
+	tail := width(theme.TabActive.Render("Log")) + width(theme.TabInactive.Render("Console")) + 2 + width(theme.KeyHint.Render(keyLabel("ctrl+k"))+theme.KeyLabel.Render(" commands  ")+theme.KeyHint.Render("?")+theme.KeyLabel.Render(" help "))
 	start := m.width - tail
 	logW := width(theme.TabActive.Render("Log"))
 	conW := width(theme.TabInactive.Render("Console"))
@@ -1234,6 +1236,9 @@ func (m *Model) headerClick(x int) tea.Cmd {
 		m.console = true
 		m.focus = PanelLog
 	case x >= start+logW+conW:
+		if x < start+logW+conW+2+width(theme.KeyHint.Render(keyLabel("ctrl+k"))+theme.KeyLabel.Render(" commands  ")) {
+			return m.commandPalette()
+		}
 		m.help = true
 	}
 	return nil
